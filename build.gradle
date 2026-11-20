@@ -1,14 +1,12 @@
 plugins {
     id 'java'
-    id 'net.neoforged.moddev' version '2.0.144'
+    id 'net.neoforged.moddev' version '2.0.148'
 }
 
 version = '0.5.1'
 group = 'ru.wardreg.ccpower'
 
 java {
-    // Compile with the running JDK targeting Java 21 bytecode. The project path
-    // contains a colon, and forked toolchain compilers would break the JVM classpath.
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
 }
@@ -18,7 +16,7 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 neoForge {
-    version = '21.1.248'
+    version = '21.8.57'
 
     validateAccessTransformers = true
 
@@ -43,18 +41,8 @@ neoForge {
 repositories {
     mavenCentral()
     maven {
-        // CC:Tweaked maven repository.
         url = 'https://maven.squiddev.cc'
-        content {
-            includeGroup 'cc.tweaked'
-        }
-    }
-    maven {
-        // CurseMaven, used only for the optional Jade compile-time API.
-        url = 'https://cursemaven.com'
-        content {
-            includeGroup 'curse.maven'
-        }
+        content { includeGroup 'cc.tweaked' }
     }
 }
 
@@ -63,20 +51,14 @@ configurations {
 }
 
 dependencies {
-    // CC:Tweaked (published under the "forge" classifier, but the 1.21.1 build is a
-    // NeoForge jar - it ships META-INF/neoforge.mods.toml and requires neoforge 21.1.x).
-    compileOnly 'cc.tweaked:cc-tweaked-1.21.1-forge:1.116.0'
-    cctRuntime 'cc.tweaked:cc-tweaked-1.21.1-forge:1.116.0'
-    // Jade tooltip integration (compile-only; the plugin class is only loaded
-    // when Jade is installed at runtime).
-    compileOnly 'curse.maven:jade-324717:7545219'
+    // CC:Tweaked (the "forge" classifier build is the NeoForge jar on these versions).
+    compileOnly 'cc.tweaked:cc-tweaked-1.21.8-forge:1.116.1'
+    cctRuntime 'cc.tweaked:cc-tweaked-1.21.8-forge:1.116.1'
 }
 
-// The project directory name contains a ':' (a JVM classpath separator). Gradle's
-// forked compiler would therefore lose jars located under this directory.
-// Copy every compile-time jar into a colon-free cache directory and compile against that.
+// Keep the colon-free compile classpath workaround from the reference build.
 def sanitizedCpDir = layout.dir(providers.provider {
-    new File(System.getProperty('java.io.tmpdir'), 'ccpower-classpath')
+    new File(System.getProperty('java.io.tmpdir'), 'ccpower-classpath-mc/1.21.8')
 })
 def sanitizeClasspath = tasks.register('sanitizeClasspath', Copy) {
     from configurations.compileClasspath
@@ -89,11 +71,10 @@ def sanitizedCpJars = files({
 sourceSets.main.compileClasspath = sanitizedCpJars
 tasks.named('compileJava') {
     dependsOn sanitizeClasspath
-    // Incremental state gets confused by the relocated classpath; full recompiles are cheap here.
     options.incremental = false
 }
 
-// Make CC:Tweaked available in local dev runs.
+// CC:Tweaked in local dev runs.
 tasks.register('copyDevModsClient', Copy) {
     from configurations.cctRuntime
     into 'runs/client/mods'

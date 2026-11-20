@@ -1,5 +1,6 @@
 package ru.wardreg.ccpower.registry;
 
+import java.util.Set;
 import java.util.function.Supplier;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -39,7 +40,7 @@ public final class ModRegistry {
 
     public static final Supplier<BlockEntityType<DockBlockEntity>> DOCK_BE =
         BLOCK_ENTITIES.register("dock", () ->
-            BlockEntityType.Builder.of(DockBlockEntity::new, DOCK.get()).build(null));
+            new BlockEntityType<>(DockBlockEntity::new, Set.of(DOCK.get())));
 
     public static final Supplier<CreativeModeTab> MAIN_TAB = TABS.register("main", () ->
         CreativeModeTab.builder()

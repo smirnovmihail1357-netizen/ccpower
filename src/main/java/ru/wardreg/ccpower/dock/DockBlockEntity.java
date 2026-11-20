@@ -4,7 +4,8 @@ import dan200.computercraft.api.turtle.ITurtleAccess;
 import dan200.computercraft.shared.turtle.blocks.TurtleBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -135,14 +136,14 @@ public class DockBlockEntity extends BlockEntity {
     }
 
     @Override
-    public void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        buffer = Math.max(0, tag.getLong(TAG_BUFFER));
+    public void loadAdditional(ValueInput tag) {
+        super.loadAdditional(tag);
+        buffer = Math.max(0, tag.getLongOr(TAG_BUFFER, 0L));
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    protected void saveAdditional(ValueOutput tag) {
+        super.saveAdditional(tag);
         tag.putLong(TAG_BUFFER, buffer);
     }
 }
