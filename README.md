@@ -2,9 +2,27 @@
 
 **RF energy consumption for [CC: Tweaked](https://modrinth.com/mod/cc-tweaked) computers and turtles.**
 
-Minecraft 1.21.1 · NeoForge 21.1.x · requires CC: Tweaked 1.116+
+Minecraft 1.15.2 – 26.3 · Forge / NeoForge / Fabric · requires CC: Tweaked
 
 [English](README.md) · [Русский](README.ru.md)
+
+## Supported versions
+
+| Minecraft | Loaders |
+|---|---|
+| 26.1.2 / 26.2 / 26.3 | NeoForge |
+| 1.21.11 / 1.21.8 / 1.21.7 / 1.21 | NeoForge + Fabric |
+| 1.21.1 | NeoForge + Fabric |
+| 1.20.6 / 1.20.5 / 1.20.4 | NeoForge + Fabric |
+| 1.20.1 / 1.20 | Forge + Fabric |
+| 1.19.4 | Forge + Fabric |
+| 1.19.3 / 1.19.2 / 1.19.1 / 1.19 | Forge |
+| 1.18.2 / 1.18.1 / 1.18 / 1.17.1 | Forge |
+| 1.16.5 (works on 1.16.4) / 1.15.2 | Forge |
+
+On Fabric the energy API is embedded (Team Reborn Energy) - no extra mod
+required. Each version lives on its own `mc/<version>` branch in this repo.
+Jade integration is included on modern NeoForge builds (optional dependency).
 
 Computers and turtles from CC: Tweaked become real energy consumers. They draw
 RF/FE (the Forge energy system used by Thermal, Mekanism, Create: Power Grid
