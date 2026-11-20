@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "package": "ru.wardreg.ccpower.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "ccpower.refmap.json",
+  "mixins": [
+    "ComputerExecutorMixin",
+    "PeripheralAPIMixin",
+    "PeripheralWrapperMixin",
+    "ServerComputerMixin",
+    "TurtleBrainMixin"
+  ],
+  "client": [],
+  "server": [],
+  "injectors": { "defaultRequire": 1 }
+}
