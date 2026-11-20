@@ -31,15 +31,15 @@ public final class ModRegistry {
     public static final DeferredRegister<CreativeModeTab> TABS =
         DeferredRegister.create(Registries.CREATIVE_MODE_TAB, CCPowerMod.MODID);
 
-    public static final DeferredBlock<DockBlock> DOCK = BLOCKS.register("dock",
-        () -> new DockBlock(DockBlock.blockProperties()));
+    public static final DeferredBlock<DockBlock> DOCK = BLOCKS.registerBlock("dock",
+        DockBlock::new, DockBlock::blockProperties);
 
     public static final DeferredItem<BlockItem> DOCK_ITEM =
         ITEMS.registerSimpleBlockItem("dock", DOCK);
 
     public static final Supplier<BlockEntityType<DockBlockEntity>> DOCK_BE =
         BLOCK_ENTITIES.register("dock", () ->
-            BlockEntityType.Builder.of(DockBlockEntity::new, DOCK.get()).build(null));
+            new BlockEntityType<>(DockBlockEntity::new, DOCK.get()));
 
     public static final Supplier<CreativeModeTab> MAIN_TAB = TABS.register("main", () ->
         CreativeModeTab.builder()
@@ -60,7 +60,7 @@ public final class ModRegistry {
      * cables and machines can push energy into it.
      */
     public static void registerCapabilities(RegisterCapabilitiesEvent event) {
-        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, DOCK_BE.get(),
+        event.registerBlockEntity(Capabilities.Energy.BLOCK, DOCK_BE.get(),
             (dock, side) -> dock.getStorage());
     }
 

@@ -41,7 +41,7 @@ public final class CCPowerMod {
         ModRegistry.register(modBus);
 
         // Common config: watched by NeoForge and reloaded dynamically on file change.
-        container.registerConfig(ModConfig.Type.COMMON, CCPowerConfig.SPEC);
+        container.registerConfig(ModConfig.Type.LOCAL, CCPowerConfig.SPEC);
         modBus.addListener(CCPowerConfig::onConfigReloading);
 
         // Expose the dock's internal buffer as a block FE capability.

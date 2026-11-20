@@ -5,8 +5,8 @@ import dan200.computercraft.api.turtle.TurtleCommand;
 import dan200.computercraft.shared.computer.core.ServerComputer;
 import dan200.computercraft.shared.turtle.core.TurtleBrain;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -99,13 +99,13 @@ public abstract class TurtleBrainMixin implements TurtleEnergyView {
 
     /** Restore the battery from NBT. */
     @Inject(method = "readCommon", at = @At("TAIL"), remap = false)
-    private void ccpower$readBuffer(CompoundTag tag, HolderLookup.Provider registries, CallbackInfo ci) {
-        ccpower$buffer = Math.max(0, tag.getLong(CCPower$TAG_BUFFER));
+    private void ccpower$readBuffer(ValueInput input, CallbackInfo ci) {
+        ccpower$buffer = Math.max(0, input.getLongOr(CCPower$TAG_BUFFER, 0L));
     }
 
     /** Store the battery into NBT. */
     @Inject(method = "writeCommon", at = @At("TAIL"), remap = false)
-    private void ccpower$writeBuffer(CompoundTag tag, HolderLookup.Provider registries, CallbackInfo ci) {
-        tag.putLong(CCPower$TAG_BUFFER, ccpower$buffer);
+    private void ccpower$writeBuffer(ValueOutput output, CallbackInfo ci) {
+        output.putLong(CCPower$TAG_BUFFER, ccpower$buffer);
     }
 }

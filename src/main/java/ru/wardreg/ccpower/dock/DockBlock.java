@@ -1,6 +1,5 @@
 package ru.wardreg.ccpower.dock;
 
-import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.RenderShape;
@@ -25,11 +24,8 @@ public class DockBlock extends BaseEntityBlock {
         super(properties);
     }
 
-    @Override
-    protected MapCodec<? extends BaseEntityBlock> codec() {
-        // Simple codec: reconstructs the block from its properties.
-        return simpleCodec(DockBlock::new);
-    }
+    // MC 26.x removed the per-block MapCodec/simpleCodec hook entirely;
+    // blocks are reconstructed from their properties by the engine.
 
     /** Block properties shared by registration and construction. */
     public static Properties blockProperties() {
@@ -51,7 +47,7 @@ public class DockBlock extends BaseEntityBlock {
     @SuppressWarnings("unchecked")
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state,
         BlockEntityType<T> type) {
-        if (level.isClientSide || type != ModRegistry.DOCK_BE.get()) {
+        if (level.isClientSide() || type != ModRegistry.DOCK_BE.get()) {
             return null;
         }
         return (tickerLevel, pos, tickerState, blockEntity) -> {

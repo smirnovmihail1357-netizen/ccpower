@@ -8,7 +8,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.energy.IEnergyStorage;
+import net.neoforged.neoforge.transfer.energy.EnergyHandler;
+import net.neoforged.neoforge.transfer.transaction.Transaction;
 import ru.wardreg.ccpower.CCPowerConfig;
 import ru.wardreg.ccpower.CCPowerMod;
 
@@ -190,11 +191,15 @@ public final class PowerManager {
         long extracted = 0;
         for (Direction dir : Direction.values()) {
             if (extracted >= max) break;
-            IEnergyStorage storage = level.getCapability(
-                Capabilities.EnergyStorage.BLOCK, pos.relative(dir), dir.getOpposite());
-            if (storage == null || !storage.canExtract()) continue;
-            extracted += storage.extractEnergy(
-                (int) Math.min(max - extracted, Integer.MAX_VALUE), false);
+            EnergyHandler storage = level.getCapability(
+                Capabilities.Energy.BLOCK, pos.relative(dir), dir.getOpposite());
+            if (storage == null) continue;
+            int got;
+            try (Transaction tx = Transaction.openRoot()) {
+                got = storage.extract((int) Math.min(max - extracted, Integer.MAX_VALUE), tx);
+                if (got > 0) tx.commit();
+            }
+            extracted += got;
         }
         return extracted;
     }
