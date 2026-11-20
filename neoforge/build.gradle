@@ -1,0 +1,54 @@
+plugins {
+    id 'java'
+    id 'net.neoforged.moddev' version '2.0.144'
+}
+
+version = '0.5.1'
+group = 'ru.wardreg.ccpower'
+base { archivesName = 'ccpower' }
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+tasks.withType(JavaCompile).configureEach {
+    options.release = 21
+    options.encoding = 'UTF-8'
+}
+
+neoForge {
+    version = '21.7.25-beta'
+    validateAccessTransformers = true
+    mods { ccpower { sourceSet sourceSets.main } }
+    runs {
+        client { client(); gameDirectory = project.file('runs/client') }
+        server { server(); gameDirectory = project.file('runs/server') }
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.squiddev.cc'; content { includeGroup 'cc.tweaked' } }
+    maven { url = 'https://api.modrinth.com/maven' }
+}
+
+configurations { cctRuntime }
+
+dependencies {
+    compileOnly 'cc.tweaked:cc-tweaked-1.21.7-forge:1.116.1'
+    cctRuntime 'cc.tweaked:cc-tweaked-1.21.7-forge:1.116.1'
+    compileOnly 'maven.modrinth:jade:19.3.1+neoforge'
+}
+
+tasks.register('copyDevModsClient', Copy) {
+    from configurations.cctRuntime
+    into 'runs/client/mods'
+}
+tasks.register('copyDevModsServer', Copy) {
+    from configurations.cctRuntime
+    into 'runs/server/mods'
+}
+tasks.configureEach {
+    if (name == 'runClient') dependsOn 'copyDevModsClient'
+    if (name == 'runServer') dependsOn 'copyDevModsServer'
+}

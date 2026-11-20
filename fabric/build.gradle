@@ -1,0 +1,47 @@
+plugins {
+    id 'java'
+    id 'fabric-loom' version '1.19.4'
+}
+
+version = '0.5.1'
+group = 'ru.wardreg.ccpower'
+base { archivesName = 'ccpower' }
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+tasks.withType(JavaCompile).configureEach {
+    options.release = 21
+    options.encoding = 'UTF-8'
+}
+
+loom {
+    runs { server { server(); runDir('runs/server') } }
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.squiddev.cc' }
+    maven { url = 'https://maven.fabricmc.net/' }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:1.21.7"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:0.16.14"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:0.129.0+1.21.7"
+    modCompileOnly "cc.tweaked:cc-tweaked-1.21.7-fabric:1.116.1"
+    modImplementation "teamreborn:energy:4.2.0"
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') { expand 'version': project.version }
+}
+
+tasks.register('copyDevModsServer', Copy) {
+    from files('/tmp/opencode/cct-jars/cct-1217-fabric-1.116.1.jar')
+    into 'runs/server/mods'
+}
+tasks.named('runServer') { dependsOn 'copyDevModsServer' }
