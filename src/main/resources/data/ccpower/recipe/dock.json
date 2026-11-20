@@ -7,9 +7,9 @@
     "IEI"
   ],
   "key": {
-    "I": {"item": "minecraft:iron_ingot"},
-    "R": {"item": "minecraft:redstone_block"},
-    "E": {"item": "minecraft:lightning_rod"}
+    "I": "minecraft:iron_ingot",
+    "R": "minecraft:redstone_block",
+    "E": "minecraft:lightning_rod"
   },
   "result": {
     "id": "ccpower:dock",
