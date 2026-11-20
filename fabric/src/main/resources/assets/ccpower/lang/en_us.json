@@ -1,0 +1,7 @@
+{
+  "itemGroup.ccpower": "CC: Power",
+  "block.ccpower.dock": "Recharge Dock",
+  "tooltip.ccpower.buffer": "RF buffer: %s / %s",
+  "tooltip.ccpower.turtle": "RF battery: %s / %s",
+  "tooltip.ccpower.denied": "Off: no RF energy"
+}

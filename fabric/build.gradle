@@ -1,0 +1,67 @@
+plugins {
+    id 'fabric-loom' version '1.6-SNAPSHOT'
+    id 'maven-publish'
+}
+
+version = '0.5.1'
+group = 'ru.wardreg.ccpower'
+
+archivesBaseName = 'ccpower'
+
+sourceCompatibility = JavaVersion.VERSION_21
+targetCompatibility = JavaVersion.VERSION_21
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
+    maven {
+        url = 'https://maven.squiddev.cc'
+        content { includeGroup 'cc.tweaked' }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:1.20.5"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:0.15.11"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:0.97.8+1.20.5"
+
+    // CC: Tweaked (Fabric build) - compile + dev runtime.
+    modImplementation 'cc.tweaked:cc-tweaked-1.20.5-fabric:1.110.3'
+
+    // Team Reborn Energy 4.x is the FE/RF API for MC 1.20.5+ on Fabric.
+    modApi('teamreborn:energy:4.0.1') {
+        exclude group: 'net.fabricmc.fabric-api'
+    }
+
+    // Mixin annotation processor generates the refmap for our cross-mod mixins.
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+}
+
+loom {
+    mixin {
+        defaultRefmapName = 'ccpower.refmap.json'
+    }
+    runs {
+        server {
+            server()
+            runDir 'runs/server'
+        }
+        client {
+            client()
+            runDir 'runs/client'
+        }
+    }
+}
+
+tasks.withType(ProcessResources).configureEach {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') {
+        expand 'version': project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+}
