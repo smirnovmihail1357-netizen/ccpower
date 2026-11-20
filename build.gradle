@@ -1,108 +1,63 @@
 plugins {
     id 'java'
-    id 'net.neoforged.moddev' version '2.0.144'
+    id 'fabric-loom' version '1.19.4'
 }
 
 version = '0.5.1'
 group = 'ru.wardreg.ccpower'
 
+base {
+    archivesName = 'ccpower'
+}
+
 java {
-    // Compile with the running JDK targeting Java 21 bytecode. The project path
-    // contains a colon, and forked toolchain compilers would break the JVM classpath.
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
 }
 
 tasks.withType(JavaCompile).configureEach {
     options.release = 21
+    options.encoding = 'UTF-8'
 }
 
-neoForge {
-    version = '21.1.248'
-
-    validateAccessTransformers = true
-
-    mods {
-        ccpower {
-            sourceSet sourceSets.main
-        }
-    }
-
+loom {
     runs {
-        client {
-            client()
-            gameDirectory = project.file('runs/client')
-        }
         server {
             server()
-            gameDirectory = project.file('runs/server')
+            runDir('runs/server')
         }
     }
 }
 
 repositories {
     mavenCentral()
-    maven {
-        // CC:Tweaked maven repository.
-        url = 'https://maven.squiddev.cc'
-        content {
-            includeGroup 'cc.tweaked'
-        }
-    }
-    maven {
-        // CurseMaven, used only for the optional Jade compile-time API.
-        url = 'https://cursemaven.com'
-        content {
-            includeGroup 'curse.maven'
-        }
-    }
-}
-
-configurations {
-    cctRuntime
+    maven { url = 'https://maven.squiddev.cc' }   // CC: Tweaked
+    maven { url = 'https://maven.fabricmc.net/' }  // Fabric loader, Fabric API, TR Energy
 }
 
 dependencies {
-    // CC:Tweaked (published under the "forge" classifier, but the 1.21.1 build is a
-    // NeoForge jar - it ships META-INF/neoforge.mods.toml and requires neoforge 21.1.x).
-    compileOnly 'cc.tweaked:cc-tweaked-1.21.1-forge:1.116.0'
-    cctRuntime 'cc.tweaked:cc-tweaked-1.21.1-forge:1.116.0'
-    // Jade tooltip integration (compile-only; the plugin class is only loaded
-    // when Jade is installed at runtime).
-    compileOnly 'curse.maven:jade-324717:7545219'
+    minecraft "com.mojang:minecraft:1.21.1"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:0.16.14"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:0.116.18+1.21.1"
+
+    // CC:Tweaked - compile against the maven (named) jar; the production
+    // (intermediary-named) jar is supplied to the dev server from runs/server/mods.
+    modCompileOnly "cc.tweaked:cc-tweaked-1.21.1-fabric:1.122.0"
+
+    // Team Reborn Energy API - the Fabric FE equivalent (4.1.0 supports MC 1.21+).
+    modImplementation "teamreborn:energy:4.1.0"
 }
 
-// The project directory name contains a ':' (a JVM classpath separator). Gradle's
-// forked compiler would therefore lose jars located under this directory.
-// Copy every compile-time jar into a colon-free cache directory and compile against that.
-def sanitizedCpDir = layout.dir(providers.provider {
-    new File(System.getProperty('java.io.tmpdir'), 'ccpower-classpath')
-})
-def sanitizeClasspath = tasks.register('sanitizeClasspath', Copy) {
-    from configurations.compileClasspath
-    into sanitizedCpDir
-    includeEmptyDirs = false
-}
-def sanitizedCpJars = files({
-    sanitizedCpDir.get().asFileTree.matching { include '*.jar' }
-})
-sourceSets.main.compileClasspath = sanitizedCpJars
-tasks.named('compileJava') {
-    dependsOn sanitizeClasspath
-    // Incremental state gets confused by the relocated classpath; full recompiles are cheap here.
-    options.incremental = false
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') { expand 'version': project.version }
 }
 
-// Make CC:Tweaked available in local dev runs.
-tasks.register('copyDevModsClient', Copy) {
-    from configurations.cctRuntime
-    into 'runs/client/mods'
-}
+// Supply CC:Tweaked to the local dev server as a real mod jar (its JiJ'd
+// libraries are then loaded by Fabric Loader itself).
 tasks.register('copyDevModsServer', Copy) {
-    from configurations.cctRuntime
+    from files('/tmp/opencode/cct-jars/cct-1211-fabric-1.122.0.jar')
     into 'runs/server/mods'
 }
-tasks.configureEach {
-    if (name == 'runClient') dependsOn 'copyDevModsClient'
-    if (name == 'runServer') dependsOn 'copyDevModsServer'
-}
+tasks.named('runServer') { dependsOn 'copyDevModsServer' }

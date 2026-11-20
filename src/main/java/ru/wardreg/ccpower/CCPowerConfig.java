@@ -1,170 +1,164 @@
 package ru.wardreg.ccpower;
 
-import net.neoforged.fml.event.config.ModConfigEvent;
-import net.neoforged.neoforge.common.ModConfigSpec;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import net.fabricmc.loader.api.FabricLoader;
 
 /**
  * All energy costs of the mod, in RF (Forge Energy) per game tick.
  *
- * <p>The common config file ({@code ccpower-common.toml}) is watched by NeoForge and
- * reloaded dynamically whenever it changes on disk - no restart is required.
+ * <p>Fabric has no NeoForge config system, so the mod owns this file itself,
+ * using the same minimal TOML reader/writer style as {@code PeripheralCosts}.
+ * The file is watched while the server runs and reloaded on change.
  */
 public final class CCPowerConfig {
-    private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
+    private static final Path FILE = FabricLoader.getInstance().getConfigDir()
+        .resolve("ccpower-common.toml");
 
-    private static final ModConfigSpec.DoubleValue IDLE = BUILDER
-        .comment("RF per game tick consumed by a powered-on computer that is idle",
-            "(no Lua work executed during the previous tick).",
-            "Turned-off computers consume nothing. Set to 0 to disable the idle drain.")
-        .defineInRange("power.idleRFPerTick", 2.0, 0.0, Double.MAX_VALUE);
+    /** key -> value, in declaration order. */
+    private static final Map<String, Object> VALUES = new LinkedHashMap<>();
 
-    private static final ModConfigSpec.DoubleValue ACTIVE = BUILDER
-        .comment("Extra RF per game tick while a program is executing",
-            "(the Lua machine performed work during the previous tick).")
-        .defineInRange("power.activeRFPerTick", 10.0, 0.0, Double.MAX_VALUE);
-
-    private static final ModConfigSpec.DoubleValue PERIPHERAL_TICK = BUILDER
-        .comment("Default RF per game tick for a peripheral type without an explicit entry",
-            "in config/ccpower-peripherals.toml. That file is auto-populated with",
-            "every peripheral type found in the world, so this value only applies",
-            "to types the moment they are first discovered (and to unknown types).")
-        .defineInRange("power.peripheralRFPerTick", 1.0, 0.0, Double.MAX_VALUE);
-
-    private static final ModConfigSpec.DoubleValue PERIPHERAL_CALL = BUILDER
-        .comment("Base RF surcharge for a peripheral method call. Every type's",
-            "actual price lives in the [rf_per_call] section of",
-            "config/ccpower-peripherals.toml: freshly discovered types are",
-            "seeded from this value - well-known types at a curated multiple",
-            "(item handlers like chests cost more, monitors and modems less),",
-            "unknown types at the plain base value. The surcharge is added to",
-            "the cost of the next game tick.")
-        .defineInRange("power.peripheralCallRF", 5.0, 0.0, Double.MAX_VALUE);
-
-    private static final ModConfigSpec.DoubleValue SURCHARGE_CAP = BUILDER
-        .comment("Maximum total surcharge (peripheral calls) carried over into a",
-            "single tick, in RF. Prevents a spamming program from creating an",
-            "unpayable energy bill.")
-        .defineInRange("power.surchargeCapPerTick", 1000.0, 0.0, Double.MAX_VALUE);
-
-    private static final ModConfigSpec.LongValue COMPUTER_BUFFER = BUILDER
-        .comment("Capacity of the stationary computer's internal RF buffer.",
-            "The computer draws its per-tick cost from this buffer and refills",
-            "it from adjacent FE blocks. A larger buffer rides through longer",
-            "supply interruptions without shutting the computer down.")
-        .defineInRange("power.computerBufferRF", 2_000L, 0L, Long.MAX_VALUE);
-
-    private static final ModConfigSpec.LongValue COMPUTER_PULL = BUILDER
-        .comment("RF per game tick a stationary computer pulls from adjacent FE",
-            "blocks into its internal buffer.")
-        .defineInRange("power.computerPullRFPerTick", 1_000L, 0L, Long.MAX_VALUE);
-
-    private static final ModConfigSpec.DoubleValue TURTLE_ACTION = BUILDER
-        .comment("RF charged for every turtle action (move, dig, place, ...).",
-            "Intended to be cheaper than a peripheral call.")
-        .defineInRange("turtle.actionRF", 4.0, 0.0, Double.MAX_VALUE);
-
-    private static final ModConfigSpec.LongValue TURTLE_BUFFER = BUILDER
-        .comment("Capacity of the turtle internal RF battery.",
-            "Turtles carry a small buffer so they can drive between Recharge Docks;",
-            "it is filled only at a Recharge Dock. 0 disables the battery limit.")
-        .defineInRange("turtle.bufferRF", 20_000L, 0L, Long.MAX_VALUE);
-
-    private static final ModConfigSpec.LongValue DOCK_BUFFER = BUILDER
-        .comment("Internal buffer of the Recharge Dock block, in RF.")
-        .defineInRange("dock.bufferRF", 50_000L, 0L, Long.MAX_VALUE);
-
-    private static final ModConfigSpec.LongValue DOCK_PULL = BUILDER
-        .comment("RF per game tick the Recharge Dock pulls from adjacent blocks.")
-        .defineInRange("dock.pullRFPerTick", 1000L, 0L, Long.MAX_VALUE);
-
-    private static final ModConfigSpec.LongValue DOCK_CHARGE = BUILDER
-        .comment("RF per game tick the Recharge Dock transfers into the battery of",
-            "the turtle standing on top of it.")
-        .defineInRange("dock.chargeRFPerTick", 250L, 0L, Long.MAX_VALUE);
-
-    private static final ModConfigSpec.BooleanValue LOGS = BUILDER
-        .comment("Enable CC: Power log messages.")
-        .define("logging.enabled", true);
-
-    private static final ModConfigSpec.BooleanValue LOG_TRANSITIONS = BUILDER
-        .comment("Log discharge shutdowns and denied power-ons of individual computers.")
-        .define("logging.stateTransitions", true);
-
-    private static final ModConfigSpec.BooleanValue LOG_DISCOVERY = BUILDER
-        .comment("Log every peripheral type the mod discovers in the world and appends",
-            "to ccpower-peripherals.toml.")
-        .define("logging.peripheralDiscovery", true);
-
-    public static final ModConfigSpec SPEC = BUILDER.build();
+    private static volatile long lastMtime = -1;
+    private static int pollCounter;
 
     private CCPowerConfig() {}
 
-    // The config values are read through the spec on every access, so an on-disk
-    // reload is picked up immediately without any caching layer.
-
-    public static double idleRFPerTick() {
-        return IDLE.get();
+    private static void defaults() {
+        VALUES.clear();
+        VALUES.put("power.idleRFPerTick", 2.0d);
+        VALUES.put("power.activeRFPerTick", 10.0d);
+        VALUES.put("power.peripheralRFPerTick", 1.0d);
+        VALUES.put("power.peripheralCallRF", 5.0d);
+        VALUES.put("power.surchargeCapPerTick", 1000.0d);
+        VALUES.put("power.computerBufferRF", 2000L);
+        VALUES.put("power.computerPullRFPerTick", 1000L);
+        VALUES.put("turtle.actionRF", 4.0d);
+        VALUES.put("turtle.bufferRF", 20000L);
+        VALUES.put("dock.bufferRF", 50000L);
+        VALUES.put("dock.pullRFPerTick", 1000L);
+        VALUES.put("dock.chargeRFPerTick", 250L);
+        VALUES.put("logging.enabled", true);
+        VALUES.put("logging.stateTransitions", true);
+        VALUES.put("logging.peripheralDiscovery", true);
     }
 
-    public static double activeRFPerTick() {
-        return ACTIVE.get();
+    static {
+        defaults();
+        load();
     }
 
-    public static double peripheralRFPerTick() {
-        return PERIPHERAL_TICK.get();
-    }
-
-    public static double peripheralCallRF() {
-        return PERIPHERAL_CALL.get();
-    }
-
-    public static double surchargeCapPerTick() {
-        return SURCHARGE_CAP.get();
-    }
-
-    public static long computerBufferRF() {
-        return COMPUTER_BUFFER.get();
-    }
-
-    public static long computerPullRFPerTick() {
-        return COMPUTER_PULL.get();
-    }
-
-    public static double turtleActionRF() {
-        return TURTLE_ACTION.get();
-    }
-
-    public static long turtleBufferRF() {
-        return TURTLE_BUFFER.get();
-    }
-
-    public static long dockBufferRF() {
-        return DOCK_BUFFER.get();
-    }
-
-    public static long dockPullRFPerTick() {
-        return DOCK_PULL.get();
-    }
-
-    public static long dockChargeRFPerTick() {
-        return DOCK_CHARGE.get();
-    }
-
-    public static boolean loggingEnabled() {
-        return LOGS.get();
-    }
-
-    public static boolean logStateTransitions() {
-        return LOG_TRANSITIONS.get();
-    }
-
-    public static boolean logPeripheralDiscovery() {
-        return LOG_DISCOVERY.get();
-    }
-
-    public static void onConfigReloading(ModConfigEvent.Reloading event) {
-        if (event.getConfig().getSpec() == SPEC && loggingEnabled()) {
-            CCPowerMod.LOG.info("CC: Power configuration reloaded");
+    /** Load the file (or write defaults on first boot). */
+    public static void load() {
+        synchronized (CCPowerConfig.class) {
+            defaults();
+            try {
+                if (Files.exists(FILE)) {
+                    for (String raw : Files.readAllLines(FILE, StandardCharsets.UTF_8)) {
+                        String line = raw;
+                        int hash = line.indexOf('#');
+                        if (hash >= 0) line = line.substring(0, hash);
+                        line = line.trim();
+                        if (line.isEmpty()) continue;
+                        int eq = line.indexOf('=');
+                        if (eq < 0) continue;
+                        String key = line.substring(0, eq).trim();
+                        String value = line.substring(eq + 1).trim();
+                        putParsed(key, value);
+                    }
+                } else {
+                    save();
+                }
+                lastMtime = Files.exists(FILE)
+                    ? Files.getLastModifiedTime(FILE).toMillis() : -1L;
+                CCPowerMod.LOG.info("CC: Power configuration loaded from {}", FILE);
+            } catch (IOException | RuntimeException e) {
+                CCPowerMod.LOG.error("Failed to read {}", FILE, e);
+            }
         }
     }
+
+    private static void putParsed(String key, String value) {
+        if (!VALUES.containsKey(key)) return;
+        Object current = VALUES.get(key);
+        try {
+            if (current instanceof Double) {
+                VALUES.put(key, Double.parseDouble(value));
+            } else if (current instanceof Long) {
+                VALUES.put(key, Long.parseLong(value));
+            } else if (current instanceof Boolean) {
+                VALUES.put(key, Boolean.parseBoolean(value));
+            }
+        } catch (NumberFormatException ignored) {
+            // Keep the default for malformed values.
+        }
+    }
+
+    /** Poll the file mtime every 40 ticks (2 seconds). */
+    public static void watchServerTick() {
+        if ((++pollCounter) % 40 != 0) return;
+        synchronized (CCPowerConfig.class) {
+            try {
+                if (!Files.exists(FILE)) return;
+                FileTime mtime = Files.getLastModifiedTime(FILE);
+                if (mtime.toMillis() != lastMtime) {
+                    load();
+                    CCPowerMod.LOG.info("CC: Power configuration reloaded");
+                }
+            } catch (IOException ignored) {
+                // Retried on the next poll.
+            }
+        }
+    }
+
+    private static void save() {
+        try {
+            StringBuilder out = new StringBuilder();
+            out.append("# CC: Power - common configuration (RF per game tick).\n");
+            out.append("# Edit freely; this file is re-read while the server runs.\n\n");
+            for (Map.Entry<String, Object> e : VALUES.entrySet()) {
+                out.append(e.getKey()).append(" = ").append(e.getValue()).append('\n');
+            }
+            Files.writeString(FILE, out.toString(), StandardCharsets.UTF_8);
+            lastMtime = Files.getLastModifiedTime(FILE).toMillis();
+        } catch (IOException e) {
+            CCPowerMod.LOG.error("Failed to write {}", FILE, e);
+        }
+    }
+
+    private static double dbl(String key) {
+        Object v = VALUES.get(key);
+        return v instanceof Number n ? n.doubleValue() : 0.0;
+    }
+
+    private static long lng(String key) {
+        Object v = VALUES.get(key);
+        return v instanceof Number n ? n.longValue() : 0L;
+    }
+
+    private static boolean boolValue(String key) {
+        Object v = VALUES.get(key);
+        return v instanceof Boolean b ? b : Boolean.parseBoolean(String.valueOf(v));
+    }
+
+    public static double idleRFPerTick() { return dbl("power.idleRFPerTick"); }
+    public static double activeRFPerTick() { return dbl("power.activeRFPerTick"); }
+    public static double peripheralRFPerTick() { return dbl("power.peripheralRFPerTick"); }
+    public static double peripheralCallRF() { return dbl("power.peripheralCallRF"); }
+    public static double surchargeCapPerTick() { return dbl("power.surchargeCapPerTick"); }
+    public static long computerBufferRF() { return lng("power.computerBufferRF"); }
+    public static long computerPullRFPerTick() { return lng("power.computerPullRFPerTick"); }
+    public static double turtleActionRF() { return dbl("turtle.actionRF"); }
+    public static long turtleBufferRF() { return lng("turtle.bufferRF"); }
+    public static long dockBufferRF() { return lng("dock.bufferRF"); }
+    public static long dockPullRFPerTick() { return lng("dock.pullRFPerTick"); }
+    public static long dockChargeRFPerTick() { return lng("dock.chargeRFPerTick"); }
+    public static boolean loggingEnabled() { return boolValue("logging.enabled"); }
+    public static boolean logStateTransitions() { return boolValue("logging.stateTransitions"); }
+    public static boolean logPeripheralDiscovery() { return boolValue("logging.peripheralDiscovery"); }
 }

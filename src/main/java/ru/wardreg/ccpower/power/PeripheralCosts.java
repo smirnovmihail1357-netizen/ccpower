@@ -1,7 +1,6 @@
 package ru.wardreg.ccpower.power;
 
 import dan200.computercraft.api.peripheral.IPeripheral;
-import dan200.computercraft.api.peripheral.PeripheralCapability;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -19,8 +18,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.neoforged.fml.ModList;
-import net.neoforged.fml.loading.FMLPaths;
+import net.fabricmc.loader.api.FabricLoader;
+import dan200.computercraft.api.peripheral.PeripheralLookup;
 import ru.wardreg.ccpower.CCPowerConfig;
 import ru.wardreg.ccpower.CCPowerMod;
 
@@ -59,7 +58,7 @@ import ru.wardreg.ccpower.CCPowerMod;
  * {@code modem}.
  */
 public final class PeripheralCosts {
-    private static final Path FILE = FMLPaths.CONFIGDIR.get().resolve("ccpower-peripherals.toml");
+    private static final Path FILE = FabricLoader.getInstance().getConfigDir().resolve("ccpower-peripherals.toml");
 
     /** RF per tick for each attached peripheral type. */
     private static final Map<String, Double> TICK_COSTS = new ConcurrentHashMap<>();
@@ -268,10 +267,20 @@ public final class PeripheralCosts {
         int discovered = 0;
         int mods = 0;
         List<String> seenOwners = new ArrayList<>();
+        List<Block> blocks = new ArrayList<>();
+        List<net.minecraft.world.level.block.state.BlockState> states = new ArrayList<>();
+        for (Block block : BuiltInRegistries.BLOCK) {
+            blocks.add(block);
+            states.add(block.defaultBlockState());
+        }
         try {
             outer:
             for (BlockEntityType<?> bet : BuiltInRegistries.BLOCK_ENTITY_TYPE) {
-                for (Block block : bet.getValidBlocks()) {
+                for (int i = 0; i < blocks.size(); i++) {
+                    // Vanilla has no getValidBlocks(); isValid() is the
+                    // loader-neutral way to find blocks a BE type applies to.
+                    if (!bet.isValid(states.get(i))) continue;
+                    Block block = blocks.get(i);
                     String type = probePeripheralType(bet, block, level);
                     if (type == null) continue;
                     String owner = namespaceOf(block);
@@ -325,11 +334,11 @@ public final class PeripheralCosts {
                 return direct.getType();
             }
 
-            var capability = PeripheralCapability.get();
-            IPeripheral peripheral = level.getCapability(capability, BlockPos.ZERO, state, be, null);
+            var capability = PeripheralLookup.get();
+            IPeripheral peripheral = capability.find(level, BlockPos.ZERO, state, be, null);
             if (peripheral == null) {
                 for (Direction side : Direction.values()) {
-                    peripheral = level.getCapability(capability, BlockPos.ZERO, state, be, side);
+                    peripheral = capability.find(level, BlockPos.ZERO, state, be, side);
                     if (peripheral != null) break;
                 }
             }
@@ -350,8 +359,8 @@ public final class PeripheralCosts {
     /** Human-friendly display name of a mod namespace, with a sane fallback. */
     private static String displayNameOf(String namespace) {
         if (namespace.equals(CCT_NAMESPACE)) return "CC: Tweaked";
-        return ModList.get().getModContainerById(namespace)
-            .map(container -> container.getModInfo().getDisplayName())
+        return FabricLoader.getInstance().getModContainer(namespace)
+            .map(container -> container.getMetadata().getName())
             .filter(name -> name != null && !name.isBlank())
             .orElse(namespace);
     }
