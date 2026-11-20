@@ -27,7 +27,6 @@ public class DockBlock extends BaseEntityBlock {
 
     @Override
     protected MapCodec<? extends BaseEntityBlock> codec() {
-        // Simple codec: reconstructs the block from its properties.
         return simpleCodec(DockBlock::new);
     }
 
@@ -51,7 +50,7 @@ public class DockBlock extends BaseEntityBlock {
     @SuppressWarnings("unchecked")
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state,
         BlockEntityType<T> type) {
-        if (level.isClientSide || type != ModRegistry.DOCK_BE.get()) {
+        if (level.isClientSide() || type != ModRegistry.DOCK_BE.get()) {
             return null;
         }
         return (tickerLevel, pos, tickerState, blockEntity) -> {

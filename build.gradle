@@ -1,24 +1,21 @@
 plugins {
     id 'java'
-    id 'net.neoforged.moddev' version '2.0.144'
+    id 'net.neoforged.moddev' version '2.0.148'
 }
 
 version = '0.5.1'
 group = 'ru.wardreg.ccpower'
 
-java {
-    // Compile with the running JDK targeting Java 21 bytecode. The project path
-    // contains a colon, and forked toolchain compilers would break the JVM classpath.
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
-}
+// Minecraft 26.x ships Java 25 (CC:T class files are major version 69).
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 tasks.withType(JavaCompile).configureEach {
-    options.release = 21
+    options.encoding = 'UTF-8'
+    options.release = 25
 }
 
 neoForge {
-    version = '21.1.248'
+    version = '26.2.0.95'
 
     validateAccessTransformers = true
 
@@ -29,12 +26,9 @@ neoForge {
     }
 
     runs {
-        client {
-            client()
-            gameDirectory = project.file('runs/client')
-        }
         server {
             server()
+            programArgument '--nogui'
             gameDirectory = project.file('runs/server')
         }
     }
@@ -43,17 +37,10 @@ neoForge {
 repositories {
     mavenCentral()
     maven {
-        // CC:Tweaked maven repository.
+        // CC:Tweaked maven repository (artifacts for MC 26.x are published here).
         url = 'https://maven.squiddev.cc'
         content {
             includeGroup 'cc.tweaked'
-        }
-    }
-    maven {
-        // CurseMaven, used only for the optional Jade compile-time API.
-        url = 'https://cursemaven.com'
-        content {
-            includeGroup 'curse.maven'
         }
     }
 }
@@ -63,46 +50,16 @@ configurations {
 }
 
 dependencies {
-    // CC:Tweaked (published under the "forge" classifier, but the 1.21.1 build is a
-    // NeoForge jar - it ships META-INF/neoforge.mods.toml and requires neoforge 21.1.x).
-    compileOnly 'cc.tweaked:cc-tweaked-1.21.1-forge:1.116.0'
-    cctRuntime 'cc.tweaked:cc-tweaked-1.21.1-forge:1.116.0'
-    // Jade tooltip integration (compile-only; the plugin class is only loaded
-    // when Jade is installed at runtime).
-    compileOnly 'curse.maven:jade-324717:7545219'
+    // CC:Tweaked for MC 26.2 (NeoForge jar, published under the "forge" classifier).
+    compileOnly 'cc.tweaked:cc-tweaked-26.2-forge:1.120.2'
+    cctRuntime 'cc.tweaked:cc-tweaked-26.2-forge:1.120.2'
 }
 
-// The project directory name contains a ':' (a JVM classpath separator). Gradle's
-// forked compiler would therefore lose jars located under this directory.
-// Copy every compile-time jar into a colon-free cache directory and compile against that.
-def sanitizedCpDir = layout.dir(providers.provider {
-    new File(System.getProperty('java.io.tmpdir'), 'ccpower-classpath')
-})
-def sanitizeClasspath = tasks.register('sanitizeClasspath', Copy) {
-    from configurations.compileClasspath
-    into sanitizedCpDir
-    includeEmptyDirs = false
-}
-def sanitizedCpJars = files({
-    sanitizedCpDir.get().asFileTree.matching { include '*.jar' }
-})
-sourceSets.main.compileClasspath = sanitizedCpJars
-tasks.named('compileJava') {
-    dependsOn sanitizeClasspath
-    // Incremental state gets confused by the relocated classpath; full recompiles are cheap here.
-    options.incremental = false
-}
-
-// Make CC:Tweaked available in local dev runs.
-tasks.register('copyDevModsClient', Copy) {
-    from configurations.cctRuntime
-    into 'runs/client/mods'
-}
+// Make CC:Tweaked available in local dev server runs.
 tasks.register('copyDevModsServer', Copy) {
     from configurations.cctRuntime
     into 'runs/server/mods'
 }
 tasks.configureEach {
-    if (name == 'runClient') dependsOn 'copyDevModsClient'
     if (name == 'runServer') dependsOn 'copyDevModsServer'
 }
