@@ -1,0 +1,34 @@
+package ru.wardreg.ccpower.mixin;
+
+import dan200.computercraft.api.lua.ILuaContext;
+import dan200.computercraft.api.lua.IArguments;
+import dan200.computercraft.api.lua.MethodResult;
+import dan200.computercraft.core.apis.PeripheralAPI;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import ru.wardreg.ccpower.access.PeripheralOwnerAccess;
+import ru.wardreg.ccpower.power.PowerManager;
+
+/** Charges the per-type call surcharge where the target type is known:
+ *  PeripheralWrapper.call holds the resolved wrapper and its cached type. */
+@Mixin(targets = "dan200.computercraft.core.apis.PeripheralAPI$PeripheralWrapper", remap = false)
+public abstract class PeripheralWrapperMixin {
+    @Shadow(remap = false)
+    @Final
+    private PeripheralAPI this$0;
+
+    @Shadow(remap = false)
+    @Final
+    private String type;
+
+    @Inject(remap = false, method = "call", at = @At("HEAD"))
+    private void ccpower$chargeCall(ILuaContext context, String method, IArguments arguments,
+        CallbackInfoReturnable<MethodResult> cir) {
+        PowerManager.chargePeripheralCall(
+            ((PeripheralOwnerAccess) (Object) this$0).ccpower$computerId(), type);
+    }
+}

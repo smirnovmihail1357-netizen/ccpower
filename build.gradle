@@ -1,108 +1,45 @@
 plugins {
-    id 'java'
-    id 'net.neoforged.moddev' version '2.0.144'
+    id 'architectury-plugin' version '3.4-SNAPSHOT'
+    id 'dev.architectury.loom' version '1.11.+' apply false
+    id 'com.github.johnrengelman.shadow' version '8.1.1' apply false
 }
 
-version = '0.5.1'
-group = 'ru.wardreg.ccpower'
+architectury { minecraft = rootProject.minecraft_version }
 
-java {
-    // Compile with the running JDK targeting Java 21 bytecode. The project path
-    // contains a colon, and forked toolchain compilers would break the JVM classpath.
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
-}
-
-tasks.withType(JavaCompile).configureEach {
-    options.release = 21
-}
-
-neoForge {
-    version = '21.1.248'
-
-    validateAccessTransformers = true
-
-    mods {
-        ccpower {
-            sourceSet sourceSets.main
-        }
-    }
-
-    runs {
-        client {
-            client()
-            gameDirectory = project.file('runs/client')
-        }
-        server {
-            server()
-            gameDirectory = project.file('runs/server')
-        }
+subprojects {
+    apply plugin: 'dev.architectury.loom'
+    loom { silentMojangMappingsLicense() }
+    dependencies {
+        minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+        mappings loom.officialMojangMappings()
     }
 }
 
-repositories {
-    mavenCentral()
-    maven {
-        // CC:Tweaked maven repository.
-        url = 'https://maven.squiddev.cc'
-        content {
-            includeGroup 'cc.tweaked'
-        }
+allprojects {
+    apply plugin: 'java'
+    apply plugin: 'architectury-plugin'
+    group = rootProject.maven_group
+    version = rootProject.mod_version
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        options.release = 17
     }
-    maven {
-        // CurseMaven, used only for the optional Jade compile-time API.
-        url = 'https://cursemaven.com'
-        content {
-            includeGroup 'curse.maven'
-        }
+
+    // The Gradle JVM is 21 (loom needs it), but MC 1.20.1 / Forge 47 must run
+    // its game JVM on Java 17.
+    tasks.withType(JavaExec).configureEach {
+        javaLauncher.set(javaToolchains.launcherFor {
+            languageVersion = JavaLanguageVersion.of(17)
+        })
     }
-}
 
-configurations {
-    cctRuntime
-}
-
-dependencies {
-    // CC:Tweaked (published under the "forge" classifier, but the 1.21.1 build is a
-    // NeoForge jar - it ships META-INF/neoforge.mods.toml and requires neoforge 21.1.x).
-    compileOnly 'cc.tweaked:cc-tweaked-1.21.1-forge:1.116.0'
-    cctRuntime 'cc.tweaked:cc-tweaked-1.21.1-forge:1.116.0'
-    // Jade tooltip integration (compile-only; the plugin class is only loaded
-    // when Jade is installed at runtime).
-    compileOnly 'curse.maven:jade-324717:7545219'
-}
-
-// The project directory name contains a ':' (a JVM classpath separator). Gradle's
-// forked compiler would therefore lose jars located under this directory.
-// Copy every compile-time jar into a colon-free cache directory and compile against that.
-def sanitizedCpDir = layout.dir(providers.provider {
-    new File(System.getProperty('java.io.tmpdir'), 'ccpower-classpath')
-})
-def sanitizeClasspath = tasks.register('sanitizeClasspath', Copy) {
-    from configurations.compileClasspath
-    into sanitizedCpDir
-    includeEmptyDirs = false
-}
-def sanitizedCpJars = files({
-    sanitizedCpDir.get().asFileTree.matching { include '*.jar' }
-})
-sourceSets.main.compileClasspath = sanitizedCpJars
-tasks.named('compileJava') {
-    dependsOn sanitizeClasspath
-    // Incremental state gets confused by the relocated classpath; full recompiles are cheap here.
-    options.incremental = false
-}
-
-// Make CC:Tweaked available in local dev runs.
-tasks.register('copyDevModsClient', Copy) {
-    from configurations.cctRuntime
-    into 'runs/client/mods'
-}
-tasks.register('copyDevModsServer', Copy) {
-    from configurations.cctRuntime
-    into 'runs/server/mods'
-}
-tasks.configureEach {
-    if (name == 'runClient') dependsOn 'copyDevModsClient'
-    if (name == 'runServer') dependsOn 'copyDevModsServer'
+    repositories {
+        mavenCentral()
+        maven { url = 'https://maven.squiddev.cc' }
+        maven { url = rootProject.file('local-maven').toURI() } // patched CC:T (see fetch-cct.sh)
+        maven { url = 'https://maven.fabricmc.net/' }
+        maven { url = 'https://maven.architectury.dev/' }
+        maven { url = 'https://maven.minecraftforge.net/' }
+    }
 }

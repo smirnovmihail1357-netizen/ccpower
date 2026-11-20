@@ -1,0 +1,53 @@
+plugins { id 'com.github.johnrengelman.shadow' }
+
+base { archivesName = 'ccpower' }
+
+architectury {
+    platformSetupLoomIde()
+    fabric()
+}
+
+configurations {
+    common
+    shadowCommon
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentFabric.extendsFrom common
+}
+
+dependencies {
+    modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
+    modImplementation "cc.tweaked:cc-tweaked-${rootProject.minecraft_version}-fabric:${rootProject.cc_tweaked_fabric_version}"
+
+    // Team Reborn Energy API (3.x covers MC 1.19.4 - 1.20.4).
+    modApi "teamreborn:energy:${rootProject.energy_api_version}"
+    include modApi("teamreborn:energy:${rootProject.energy_api_version}")
+
+    // CC:T embeds these as JiJ in production; loom needs them explicit in dev.
+    rootProject.file('libs-jij').listFiles()?.findAll { it.name.endsWith('.jar') }?.each {
+        runtimeOnly files(it)
+    }
+
+    common(project(path: ':common', configuration: 'namedElements')) { transitive = false }
+    shadowCommon(project(path: ':common', configuration: 'transformProductionFabric')) { transitive = false }
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') { expand 'version': project.version }
+}
+
+tasks.jar { archiveClassifier = 'dev' }
+
+shadowJar {
+    archiveClassifier = 'dev-shadow'
+    configurations = [project.configurations.shadowCommon]
+    destinationDirectory = layout.buildDirectory.dir('devlibs')
+}
+
+remapJar {
+    inputFile.set shadowJar.archiveFile
+    dependsOn shadowJar
+    archiveClassifier = null
+}
