@@ -6,9 +6,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.energy.IEnergyStorage;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.energy.IEnergyStorage;
 import ru.wardreg.ccpower.CCPowerConfig;
 import ru.wardreg.ccpower.CCPowerMod;
 
@@ -169,7 +170,7 @@ public final class PowerManager {
      * buffer, up to {@code power.computerPullRFPerTick} per tick.
      */
     private static void refillBuffer(ServerComputer computer, ComputerPowerState st) {
-        ServerLevel level = computer.getLevel();
+        Level level = computer.getLevel();
         BlockPos pos = computer.getPosition();
         if (level == null || pos == null) return;
 
@@ -186,12 +187,13 @@ public final class PowerManager {
      *
      * @return the amount actually extracted
      */
-    private static long extractUpTo(ServerLevel level, BlockPos pos, long max) {
+    private static long extractUpTo(Level level, BlockPos pos, long max) {
         long extracted = 0;
         for (Direction dir : Direction.values()) {
             if (extracted >= max) break;
-            IEnergyStorage storage = level.getCapability(
-                Capabilities.EnergyStorage.BLOCK, pos.relative(dir), dir.getOpposite());
+            BlockEntity neighbourBe = level.getBlockEntity(pos.relative(dir));
+            if (neighbourBe == null) continue;
+            IEnergyStorage storage = neighbourBe.getCapability(ForgeCapabilities.ENERGY, dir.getOpposite()).orElse(null);
             if (storage == null || !storage.canExtract()) continue;
             extracted += storage.extractEnergy(
                 (int) Math.min(max - extracted, Integer.MAX_VALUE), false);

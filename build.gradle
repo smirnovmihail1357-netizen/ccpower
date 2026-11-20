@@ -1,61 +1,30 @@
 plugins {
     id 'java'
-    id 'net.neoforged.moddev' version '2.0.144'
+    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
 }
 
 version = '0.5.1'
 group = 'ru.wardreg.ccpower'
+archivesBaseName = 'ccpower'
 
-java {
-    // Compile with the running JDK targeting Java 21 bytecode. The project path
-    // contains a colon, and forked toolchain compilers would break the JVM classpath.
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
-}
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
-tasks.withType(JavaCompile).configureEach {
-    options.release = 21
-}
-
-neoForge {
-    version = '21.1.248'
-
-    validateAccessTransformers = true
-
-    mods {
-        ccpower {
-            sourceSet sourceSets.main
-        }
-    }
+minecraft {
+    mappings channel: 'official', version: '1.19.4'
 
     runs {
-        client {
-            client()
-            gameDirectory = project.file('runs/client')
-        }
         server {
-            server()
-            gameDirectory = project.file('runs/server')
+            workingDirectory project.file('runs/server')
+            property 'forge.logging.console.level', 'info'
+            args '--nogui', '--mixin.config=ccpower.mixins.json'
+            mods { ccpower { source sourceSets.main } }
         }
     }
 }
 
 repositories {
     mavenCentral()
-    maven {
-        // CC:Tweaked maven repository.
-        url = 'https://maven.squiddev.cc'
-        content {
-            includeGroup 'cc.tweaked'
-        }
-    }
-    maven {
-        // CurseMaven, used only for the optional Jade compile-time API.
-        url = 'https://cursemaven.com'
-        content {
-            includeGroup 'curse.maven'
-        }
-    }
+    flatDir { dirs 'libs' }
 }
 
 configurations {
@@ -63,46 +32,34 @@ configurations {
 }
 
 dependencies {
-    // CC:Tweaked (published under the "forge" classifier, but the 1.21.1 build is a
-    // NeoForge jar - it ships META-INF/neoforge.mods.toml and requires neoforge 21.1.x).
-    compileOnly 'cc.tweaked:cc-tweaked-1.21.1-forge:1.116.0'
-    cctRuntime 'cc.tweaked:cc-tweaked-1.21.1-forge:1.116.0'
-    // Jade tooltip integration (compile-only; the plugin class is only loaded
-    // when Jade is installed at runtime).
-    compileOnly 'curse.maven:jade-324717:7545219'
+    minecraft "net.minecraftforge:forge:1.19.4-45.1.2"
+    // CC:T production jar (the exact pinned version). fg.deobf remaps its SRG
+    // references into this workspace's official mappings for both compile and dev run.
+    compileOnly fg.deobf('cc.tweaked:cct:1.0')
+    cctRuntime fg.deobf('cc.tweaked:cct:1.0')
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
 
-// The project directory name contains a ':' (a JVM classpath separator). Gradle's
-// forked compiler would therefore lose jars located under this directory.
-// Copy every compile-time jar into a colon-free cache directory and compile against that.
-def sanitizedCpDir = layout.dir(providers.provider {
-    new File(System.getProperty('java.io.tmpdir'), 'ccpower-classpath')
-})
-def sanitizeClasspath = tasks.register('sanitizeClasspath', Copy) {
-    from configurations.compileClasspath
-    into sanitizedCpDir
-    includeEmptyDirs = false
+jar {
+    manifest {
+        attributes([
+            'MixinConfigs'               : 'ccpower.mixins.json',
+            'Implementation-Title'       : 'CC: Power',
+            'Implementation-Version'     : project.version
+        ])
+    }
 }
-def sanitizedCpJars = files({
-    sanitizedCpDir.get().asFileTree.matching { include '*.jar' }
-})
-sourceSets.main.compileClasspath = sanitizedCpJars
-tasks.named('compileJava') {
-    dependsOn sanitizeClasspath
-    // Incremental state gets confused by the relocated classpath; full recompiles are cheap here.
-    options.incremental = false
+jar.finalizedBy('reobfJar')
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
 }
 
-// Make CC:Tweaked available in local dev runs.
-tasks.register('copyDevModsClient', Copy) {
-    from configurations.cctRuntime
-    into 'runs/client/mods'
-}
 tasks.register('copyDevModsServer', Copy) {
+    doFirst { delete fileTree('runs/server/mods') }
     from configurations.cctRuntime
     into 'runs/server/mods'
 }
 tasks.configureEach {
-    if (name == 'runClient') dependsOn 'copyDevModsClient'
     if (name == 'runServer') dependsOn 'copyDevModsServer'
 }

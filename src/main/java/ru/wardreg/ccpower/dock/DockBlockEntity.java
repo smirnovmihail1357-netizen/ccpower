@@ -8,29 +8,19 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.energy.IEnergyStorage;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.energy.IEnergyStorage;
 import ru.wardreg.ccpower.CCPowerConfig;
 import ru.wardreg.ccpower.power.TurtleEnergyView;
 import ru.wardreg.ccpower.registry.ModRegistry;
 
-/**
- * Block entity of the Recharge Dock. Every server tick it:
- * <ol>
- *   <li>pulls up to {@code dock.pullRFPerTick} RF from adjacent FE storages into its
- *       own buffer (the buffer is also exposed as a FE capability, so pipes can push);</li>
- *   <li>transfers up to {@code dock.chargeRFPerTick} RF into the internal battery of the
- *       turtle standing directly on top of the dock.</li>
- * </ol>
- */
+/** Block entity of the Recharge Dock: pulls FE from neighbours, charges the turtle above. */
 public class DockBlockEntity extends BlockEntity {
-    /** NBT key for the dock's internal buffer. */
     private static final String TAG_BUFFER = "ccpower_rf";
-
-    /** Current RF buffer of the dock. Only touched on the server thread. */
     private long buffer;
 
-    /** FE view of the dock's buffer, registered as a block capability. */
     private final IEnergyStorage storage = new IEnergyStorage() {
         @Override
         public int receiveEnergy(int toReceive, boolean simulate) {
@@ -44,67 +34,53 @@ public class DockBlockEntity extends BlockEntity {
         }
 
         @Override
-        public int extractEnergy(int toExtract, boolean simulate) {
-            // The dock never gives energy out through its capability; it only feeds turtles.
-            return 0;
-        }
+        public int extractEnergy(int toExtract, boolean simulate) { return 0; }
 
         @Override
-        public int getEnergyStored() {
-            return (int) Math.min(buffer, Integer.MAX_VALUE);
-        }
+        public int getEnergyStored() { return (int) Math.min(buffer, Integer.MAX_VALUE); }
 
         @Override
-        public int getMaxEnergyStored() {
-            return (int) Math.min(CCPowerConfig.dockBufferRF(), Integer.MAX_VALUE);
-        }
+        public int getMaxEnergyStored() { return (int) Math.min(CCPowerConfig.dockBufferRF(), Integer.MAX_VALUE); }
 
         @Override
-        public boolean canExtract() {
-            return false;
-        }
+        public boolean canExtract() { return false; }
 
         @Override
-        public boolean canReceive() {
-            return true;
-        }
+        public boolean canReceive() { return true; }
     };
+
+    private final LazyOptional<IEnergyStorage> storageCap = LazyOptional.of(() -> storage);
 
     public DockBlockEntity(BlockPos pos, BlockState state) {
         super(ModRegistry.DOCK_BE.get(), pos, state);
     }
 
-    public IEnergyStorage getStorage() {
-        return storage;
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
+        if (cap == ForgeCapabilities.ENERGY) return (LazyOptional<T>) storageCap;
+        return super.getCapability(cap, side);
     }
 
-    /** @return RF currently stored in the dock buffer (server side). */
-    public long getBuffer() {
-        return buffer;
-    }
+    public IEnergyStorage getStorage() { return storage; }
+    public long getBuffer() { return buffer; }
+    public long getBufferCapacity() { return CCPowerConfig.dockBufferRF(); }
 
-    /** @return configured capacity of the dock buffer. */
-    public long getBufferCapacity() {
-        return CCPowerConfig.dockBufferRF();
-    }
-
-    /** Server-side tick: pull RF from neighbours, charge the turtle above. */
     public static void serverTick(Level level, BlockPos pos, BlockState state, DockBlockEntity dock) {
         dock.tickPull(level, pos);
         dock.tickChargeTurtle(level, pos);
     }
 
-    /** Pull RF from adjacent blocks into the dock buffer. */
     private void tickPull(Level level, BlockPos pos) {
         long capacity = CCPowerConfig.dockBufferRF();
         long remaining = Math.min(CCPowerConfig.dockPullRFPerTick(), capacity - buffer);
         if (remaining <= 0) return;
-
         boolean changed = false;
         for (Direction dir : Direction.values()) {
             if (remaining <= 0) break;
-            IEnergyStorage neighbour = level.getCapability(
-                Capabilities.EnergyStorage.BLOCK, pos.relative(dir), dir.getOpposite());
+            BlockEntity neighbourBe = level.getBlockEntity(pos.relative(dir));
+            if (neighbourBe == null) continue;
+            IEnergyStorage neighbour = neighbourBe.getCapability(ForgeCapabilities.ENERGY, dir.getOpposite()).orElse(null);
             if (neighbour == null || !neighbour.canExtract()) continue;
             int extracted = neighbour.extractEnergy((int) Math.min(remaining, Integer.MAX_VALUE), false);
             if (extracted > 0) {
@@ -116,15 +92,12 @@ public class DockBlockEntity extends BlockEntity {
         if (changed) setChanged();
     }
 
-    /** Feed the turtle directly above from the dock buffer. */
     private void tickChargeTurtle(Level level, BlockPos pos) {
         if (buffer <= 0) return;
         BlockEntity above = level.getBlockEntity(pos.above());
         if (!(above instanceof TurtleBlockEntity turtleEntity)) return;
-
         ITurtleAccess access = turtleEntity.getAccess();
         if (!(access instanceof TurtleEnergyView turtle)) return;
-
         long transfer = Math.min(buffer, CCPowerConfig.dockChargeRFPerTick());
         if (transfer <= 0) return;
         long accepted = turtle.ccpower$receiveEnergy(transfer);
@@ -135,14 +108,14 @@ public class DockBlockEntity extends BlockEntity {
     }
 
     @Override
-    public void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
+    public void load(CompoundTag tag) {
+        super.load(tag);
         buffer = Math.max(0, tag.getLong(TAG_BUFFER));
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
         tag.putLong(TAG_BUFFER, buffer);
     }
 }

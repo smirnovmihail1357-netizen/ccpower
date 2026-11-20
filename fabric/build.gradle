@@ -1,0 +1,46 @@
+plugins {
+    id 'java'
+    id 'fabric-loom' version '1.3.7'
+}
+
+version = '0.5.1'
+group = 'ru.wardreg.ccpower'
+archivesBaseName = 'ccpower-fabric'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.fabricmc.net/' }
+    flatDir { dirs 'libs' }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:1.19.4"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:0.14.21"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:0.86.1+1.19.4"
+
+    // CC:T production jar and Team Reborn Energy 3.0.0 (the 1.19.4 era line).
+    modCompileOnly "cc.tweaked:cc-tweaked-fabric:1.108.0"
+    modApi "teamreborn:energy:3.0.0"
+
+    // Dev-runtime mods. CC:T's JiJ libraries must be put on the classpath
+    // explicitly in a loom dev run (loom does not expand JiJ from a flatDir jar).
+    modRuntimeOnly "cc.tweaked:cc-tweaked-fabric:1.108.0"
+    modRuntimeOnly "teamreborn:energy:3.0.0"
+    fileTree("libs/jij") { include "*.jar" }.each { runtimeOnly files(it) }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 17
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') { expand 'version': project.version }
+}
