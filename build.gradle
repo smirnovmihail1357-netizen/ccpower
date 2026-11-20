@@ -1,108 +1,87 @@
-plugins {
-    id 'java'
-    id 'net.neoforged.moddev' version '2.0.144'
+buildscript {
+    repositories {
+        maven { url = 'https://maven.minecraftforge.net' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:4.1.16'
+    }
 }
+
+apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'java'
 
 version = '0.5.1'
 group = 'ru.wardreg.ccpower'
+archivesBaseName = 'ccpower'
 
-java {
-    // Compile with the running JDK targeting Java 21 bytecode. The project path
-    // contains a colon, and forked toolchain compilers would break the JVM classpath.
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
-}
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+compileJava.options.encoding = 'UTF-8'
 
-tasks.withType(JavaCompile).configureEach {
-    options.release = 21
-}
-
-neoForge {
-    version = '21.1.248'
-
-    validateAccessTransformers = true
-
-    mods {
-        ccpower {
-            sourceSet sourceSets.main
-        }
-    }
+minecraft {
+    mappings channel: 'official', version: '1.16.5'
 
     runs {
-        client {
-            client()
-            gameDirectory = project.file('runs/client')
-        }
         server {
-            server()
-            gameDirectory = project.file('runs/server')
+            workingDirectory project.file('runs/server')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            // FG4 dev has no manifest, so load the mixin config explicitly.
+            args '-mixin.config=ccpower.mixins.json'
+            mods {
+                ccpower {
+                    source sourceSets.main
+                }
+            }
         }
     }
 }
 
 repositories {
     mavenCentral()
-    maven {
-        // CC:Tweaked maven repository.
-        url = 'https://maven.squiddev.cc'
-        content {
-            includeGroup 'cc.tweaked'
-        }
-    }
-    maven {
-        // CurseMaven, used only for the optional Jade compile-time API.
-        url = 'https://cursemaven.com'
-        content {
-            includeGroup 'curse.maven'
-        }
-    }
+    maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
+    // fg.deobf needs a module dependency, not files(), so serve libs/ as flatDir.
+    flatDir { dirs 'libs' }
 }
 
 configurations {
-    cctRuntime
+    cctDev
 }
+
+// CC:T production jars are SRG-named; fg.deobf remaps them to the dev mapping
+// so both compile and runServer see the same class names.
+def cctDep = 'cc.tweaked:cc-tweaked-1.16.5:1.101.3'
 
 dependencies {
-    // CC:Tweaked (published under the "forge" classifier, but the 1.21.1 build is a
-    // NeoForge jar - it ships META-INF/neoforge.mods.toml and requires neoforge 21.1.x).
-    compileOnly 'cc.tweaked:cc-tweaked-1.21.1-forge:1.116.0'
-    cctRuntime 'cc.tweaked:cc-tweaked-1.21.1-forge:1.116.0'
-    // Jade tooltip integration (compile-only; the plugin class is only loaded
-    // when Jade is installed at runtime).
-    compileOnly 'curse.maven:jade-324717:7545219'
+    minecraft 'net.minecraftforge:forge:1.16.5-36.2.42'
+    compileOnly fg.deobf(cctDep)
+    cctDev fg.deobf(cctDep)
+    implementation 'org.spongepowered:mixin:0.8.4'
+    annotationProcessor 'org.spongepowered:mixin:0.8.4:processor'
 }
 
-// The project directory name contains a ':' (a JVM classpath separator). Gradle's
-// forked compiler would therefore lose jars located under this directory.
-// Copy every compile-time jar into a colon-free cache directory and compile against that.
-def sanitizedCpDir = layout.dir(providers.provider {
-    new File(System.getProperty('java.io.tmpdir'), 'ccpower-classpath')
-})
-def sanitizeClasspath = tasks.register('sanitizeClasspath', Copy) {
-    from configurations.compileClasspath
-    into sanitizedCpDir
-    includeEmptyDirs = false
-}
-def sanitizedCpJars = files({
-    sanitizedCpDir.get().asFileTree.matching { include '*.jar' }
-})
-sourceSets.main.compileClasspath = sanitizedCpJars
-tasks.named('compileJava') {
-    dependsOn sanitizeClasspath
-    // Incremental state gets confused by the relocated classpath; full recompiles are cheap here.
-    options.incremental = false
-}
-
-// Make CC:Tweaked available in local dev runs.
-tasks.register('copyDevModsClient', Copy) {
-    from configurations.cctRuntime
-    into 'runs/client/mods'
-}
-tasks.register('copyDevModsServer', Copy) {
-    from configurations.cctRuntime
+// Make CC:T available as a real mod in the dev server.
+tasks.register('copyDevMods', Copy) {
+    from configurations.cctDev
     into 'runs/server/mods'
 }
 tasks.configureEach {
-    if (name == 'runClient') dependsOn 'copyDevModsClient'
-    if (name == 'runServer') dependsOn 'copyDevModsServer'
+    if (name == 'runServer') dependsOn 'copyDevMods'
 }
+
+jar {
+    manifest {
+        attributes([
+            'Specification-Title': 'ccpower',
+            'Specification-Vendor': 'wardreg',
+            'Specification-Version': '1',
+            'Implementation-Title': 'CC: Power',
+            'Implementation-Version': project.version,
+            'Implementation-Vendor': 'wardreg',
+            // Forge 1.16 registers mixin configs through the jar manifest.
+            'MixinConfigs': 'ccpower.mixins.json'
+        ])
+    }
+}
+jar.finalizedBy('reobfJar')

@@ -8,10 +8,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.wardreg.ccpower.power.PowerManager;
 
 /**
- * Hook into the per-tick entry point of every server computer. Performs the RF
- * accounting before the rest of the tick runs: the tick cost is drawn from
- * the internal buffer, and a computer that cannot pay is shut down (see
- * PowerManager). Power-on itself is gated in the ComputerExecutor mixin.
+ * Hook into the per-tick entry point of every server computer. In CC:T 1.101
+ * this is {@code tickServer()} (1.97 uses {@code update()} instead).
  */
 @Mixin(value = ServerComputer.class, remap = false)
 public abstract class ServerComputerMixin {
