@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "ccpower",
+  "version": "${version}",
+  "name": "CC: Power",
+  "description": "RF (Forge Energy) consumption for CC:Tweaked computers and turtles. Computers draw from adjacent energy blocks; turtles carry a battery recharged at the Recharge Dock.",
+  "authors": ["wardreg"],
+  "contact": {},
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": { "main": ["ru.wardreg.ccpower.CCPowerMod"] },
+  "mixins": ["ccpower.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.15.11",
+    "minecraft": "~1.20.6",
+    "java": ">=21",
+    "fabric-api": "*",
+    "computercraft": ">=1.111.0",
+    "team_reborn_energy": "*"
+  }
+}
