@@ -18,28 +18,28 @@ battery recharged at the Recharge Dock (drone station).
 [[dependencies.ccpower]]
 modId = "neoforge"
 type = "required"
-versionRange = "[21.1.248,)"
+versionRange = "[21.0.167,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.ccpower]]
 modId = "minecraft"
 type = "required"
-versionRange = "[1.21.1]"
+versionRange = "[1.21]"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.ccpower]]
 modId = "computercraft"
 type = "required"
-versionRange = "[1.116.0,)"
+versionRange = "[1.112.0,)"
 ordering = "AFTER"
 side = "BOTH"
 
 [[dependencies.ccpower]]
 modId = "jade"
 type = "optional"
-versionRange = "[15.10.0,)"
+versionRange = "[15.1.0,)"
 ordering = "AFTER"
 side = "BOTH"
 
