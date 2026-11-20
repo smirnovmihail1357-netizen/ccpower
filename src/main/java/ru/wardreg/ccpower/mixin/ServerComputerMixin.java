@@ -15,7 +15,7 @@ import ru.wardreg.ccpower.power.PowerManager;
  */
 @Mixin(value = ServerComputer.class, remap = false)
 public abstract class ServerComputerMixin {
-    @Inject(method = "tickServer", at = @At("HEAD"), remap = false)
+    @Inject(method = "update", at = @At("HEAD"), remap = false)
     private void ccpower$accountEnergy(CallbackInfo ci) {
         PowerManager.onTickServer((ServerComputer) (Object) this);
     }
