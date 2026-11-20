@@ -2,6 +2,9 @@ package ru.wardreg.ccpower.dock;
 
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SoundType;
@@ -13,6 +16,7 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
+import ru.wardreg.ccpower.CCPowerMod;
 import ru.wardreg.ccpower.registry.ModRegistry;
 
 /**
@@ -34,6 +38,8 @@ public class DockBlock extends BaseEntityBlock {
     /** Block properties shared by registration and construction. */
     public static Properties blockProperties() {
         return BlockBehaviour.Properties.of()
+            .setId(ResourceKey.create(Registries.BLOCK,
+                Identifier.fromNamespaceAndPath(CCPowerMod.MODID, "dock")))
             .mapColor(MapColor.METAL)
             .strength(3.5f, 8.0f)
             .requiresCorrectToolForDrops()
@@ -51,7 +57,7 @@ public class DockBlock extends BaseEntityBlock {
     @SuppressWarnings("unchecked")
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state,
         BlockEntityType<T> type) {
-        if (level.isClientSide || type != ModRegistry.DOCK_BE.get()) {
+        if (level.isClientSide() || type != ModRegistry.DOCK_BE.get()) {
             return null;
         }
         return (tickerLevel, pos, tickerState, blockEntity) -> {

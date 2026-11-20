@@ -4,12 +4,15 @@ import dan200.computercraft.api.turtle.ITurtleAccess;
 import dan200.computercraft.shared.turtle.blocks.TurtleBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.energy.IEnergyStorage;
+import net.neoforged.neoforge.transfer.energy.EnergyHandler;
+import net.neoforged.neoforge.transfer.transaction.Transaction;
+import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 import ru.wardreg.ccpower.CCPowerConfig;
 import ru.wardreg.ccpower.power.TurtleEnergyView;
 import ru.wardreg.ccpower.registry.ModRegistry;
@@ -31,42 +34,32 @@ public class DockBlockEntity extends BlockEntity {
     private long buffer;
 
     /** FE view of the dock's buffer, registered as a block capability. */
-    private final IEnergyStorage storage = new IEnergyStorage() {
+    private final EnergyHandler storage = new EnergyHandler() {
         @Override
-        public int receiveEnergy(int toReceive, boolean simulate) {
-            long space = CCPowerConfig.dockBufferRF() - buffer;
-            long accepted = Math.max(0, Math.min(toReceive, space));
-            if (!simulate) {
+        public long getAmountAsLong() {
+            return buffer;
+        }
+
+        @Override
+        public long getCapacityAsLong() {
+            return CCPowerConfig.dockBufferRF();
+        }
+
+        @Override
+        public int insert(int toReceive, TransactionContext context) {
+            if (toReceive <= 0) return 0;
+            long space = Math.max(0, CCPowerConfig.dockBufferRF() - buffer);
+            int accepted = (int) Math.min(toReceive, space);
+            if (accepted > 0) {
                 buffer += accepted;
-                if (accepted > 0) setChanged();
+                setChanged();
             }
-            return (int) accepted;
+            return accepted;
         }
 
         @Override
-        public int extractEnergy(int toExtract, boolean simulate) {
-            // The dock never gives energy out through its capability; it only feeds turtles.
-            return 0;
-        }
-
-        @Override
-        public int getEnergyStored() {
-            return (int) Math.min(buffer, Integer.MAX_VALUE);
-        }
-
-        @Override
-        public int getMaxEnergyStored() {
-            return (int) Math.min(CCPowerConfig.dockBufferRF(), Integer.MAX_VALUE);
-        }
-
-        @Override
-        public boolean canExtract() {
-            return false;
-        }
-
-        @Override
-        public boolean canReceive() {
-            return true;
+        public int extract(int toExtract, TransactionContext context) {
+            return 0; // the dock never gives energy out through its capability
         }
     };
 
@@ -74,7 +67,7 @@ public class DockBlockEntity extends BlockEntity {
         super(ModRegistry.DOCK_BE.get(), pos, state);
     }
 
-    public IEnergyStorage getStorage() {
+    public EnergyHandler getStorage() {
         return storage;
     }
 
@@ -103,14 +96,17 @@ public class DockBlockEntity extends BlockEntity {
         boolean changed = false;
         for (Direction dir : Direction.values()) {
             if (remaining <= 0) break;
-            IEnergyStorage neighbour = level.getCapability(
-                Capabilities.EnergyStorage.BLOCK, pos.relative(dir), dir.getOpposite());
-            if (neighbour == null || !neighbour.canExtract()) continue;
-            int extracted = neighbour.extractEnergy((int) Math.min(remaining, Integer.MAX_VALUE), false);
-            if (extracted > 0) {
-                buffer += extracted;
-                remaining -= extracted;
-                changed = true;
+            EnergyHandler neighbour = level.getCapability(
+                Capabilities.Energy.BLOCK, pos.relative(dir), dir.getOpposite());
+            if (neighbour == null) continue;
+            try (Transaction tx = Transaction.openRoot()) {
+                int extracted = neighbour.extract((int) Math.min(remaining, Integer.MAX_VALUE), tx);
+                if (extracted > 0) {
+                    tx.commit();
+                    buffer += extracted;
+                    remaining -= extracted;
+                    changed = true;
+                }
             }
         }
         if (changed) setChanged();
@@ -135,14 +131,14 @@ public class DockBlockEntity extends BlockEntity {
     }
 
     @Override
-    public void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        buffer = Math.max(0, tag.getLong(TAG_BUFFER));
+    public void loadAdditional(ValueInput tag) {
+        super.loadAdditional(tag);
+        buffer = Math.max(0, tag.getLongOr(TAG_BUFFER, 0L));
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    protected void saveAdditional(ValueOutput tag) {
+        super.saveAdditional(tag);
         tag.putLong(TAG_BUFFER, buffer);
     }
 }
