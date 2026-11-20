@@ -1,0 +1,10 @@
+architectury { common 'fabric', 'forge' }
+
+dependencies {
+    // Common code compiles against the Fabric CC:T jar; loom remaps its
+    // intermediary MC descriptors into the named (mojmap) dev environment,
+    // which is also what the Forge module compiles against.
+    modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    modCompileOnly "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
+    modCompileOnly "cc.tweaked:cc-tweaked-${rootProject.minecraft_version}-fabric:${rootProject.cc_tweaked_fabric_version}"
+}

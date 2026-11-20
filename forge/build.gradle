@@ -1,0 +1,52 @@
+plugins { id 'com.github.johnrengelman.shadow' }
+
+base { archivesName = 'ccpower' }
+
+architectury {
+    platformSetupLoomIde()
+    forge()
+}
+
+loom {
+    forge { mixinConfigs 'ccpower.mixins.json' }
+}
+
+configurations {
+    common
+    shadowCommon
+    compileClasspath.extendsFrom common
+    runtimeClasspath.extendsFrom common
+    developmentForge.extendsFrom common
+}
+
+dependencies {
+    forge "net.minecraftforge:forge:${rootProject.minecraft_version}-${rootProject.forge_version}"
+
+    modCompileOnly "cc.tweaked:cc-tweaked-${rootProject.minecraft_version}-forge:${rootProject.cc_tweaked_version}"
+    modCompileOnly "cc.tweaked:cc-tweaked-${rootProject.minecraft_version}-core-api:${rootProject.cc_tweaked_version}"
+    forgeRuntimeLibrary "cc.tweaked:cobalt:${rootProject.cobalt_version}"
+    modRuntimeOnly "cc.tweaked:cc-tweaked-${rootProject.minecraft_version}-forge:${rootProject.cc_tweaked_version}"
+
+    common(project(path: ':common', configuration: 'namedElements')) { transitive = false }
+    shadowCommon(project(path: ':common', configuration: 'transformProductionForge')) { transitive = false }
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('META-INF/mods.toml') { expand 'version': project.version }
+}
+
+tasks.jar { archiveClassifier = 'dev' }
+
+shadowJar {
+    archiveClassifier = 'dev-shadow'
+    configurations = [project.configurations.shadowCommon]
+    destinationDirectory = layout.buildDirectory.dir('devlibs')
+    manifest { attributes 'MixinConfigs': 'ccpower.mixins.json' }
+}
+
+remapJar {
+    inputFile.set shadowJar.archiveFile
+    dependsOn shadowJar
+    archiveClassifier = null
+}

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "ccpower",
+  "version": "${version}",
+  "name": "CC: Power",
+  "description": "Adds RF (Forge Energy) power consumption to CC:Tweaked computers and turtles. Computers draw energy from adjacent blocks; turtles carry a small internal battery recharged at the Recharge Dock.",
+  "authors": [
+    "wardreg"
+  ],
+  "contact": {
+    "sources": "https://github.com/smirnovmihail1357-netizen/ccpower"
+  },
+  "license": "MIT",
+  "icon": "icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "ru.wardreg.ccpower.fabric.FabricEntry"
+    ]
+  },
+  "mixins": [
+    "ccpower.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.10",
+    "minecraft": "1.20.1",
+    "computercraft": ">=1.122.0"
+  }
+}
