@@ -1,0 +1,79 @@
+plugins {
+    id 'java'
+    id 'net.neoforged.gradle.userdev' version '7.0.142'
+}
+
+version = '0.5.1'
+group = 'ru.wardreg.ccpower'
+
+base {
+    archivesName = 'ccpower'
+}
+
+// Mojang ships Java 21 to end users starting in 1.20.5, so mods target Java 21.
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url = 'https://maven.squiddev.cc'
+        content { includeGroup 'cc.tweaked' }
+    }
+}
+
+configurations {
+    cctRuntime
+}
+
+dependencies {
+    implementation "net.neoforged:neoforge:20.5.21-beta"
+    // CC:T "-forge-" artifacts are NeoForge jars in the 1.20.4+ era (META-INF/neoforge.mods.toml).
+    compileOnly 'cc.tweaked:cc-tweaked-1.20.5-forge:1.110.3'
+    cctRuntime 'cc.tweaked:cc-tweaked-1.20.5-forge:1.110.3'
+}
+
+runs {
+    configureEach {
+        systemProperty 'forge.logging.console.level', 'info'
+        modSource project.sourceSets.main
+    }
+    server {
+        programArgument '--nogui'
+        workingDirectory project.file('runs/server')
+    }
+    client {
+        workingDirectory project.file('runs/client')
+    }
+}
+
+// NeoGradle 7.0.x + NeoForge 20.6 resolves SpongeMixin's ASM 9.5 alongside
+// NeoForge's ASM 9.8. BootstrapLauncher rejects two different jars with the same
+// module name; rewrite the stale 9.5 entries to the identical 9.8 jars.
+tasks.register('fixAsmClasspath') {
+    mustRunAfter 'writeMinecraftClasspathServer'
+    doLast {
+        exec {
+            commandLine 'python3', file('patch-asm.py').absolutePath, projectDir.absolutePath
+        }
+    }
+}
+tasks.matching { it.name == 'runServer' || it.name == 'runClient' }.configureEach { dependsOn 'fixAsmClasspath' }
+
+// Make CC:Tweaked available in local dev runs (exact production jar from the port matrix).
+tasks.register('copyDevModsServer', Copy) {
+    from configurations.cctRuntime
+    into 'runs/server/mods'
+}
+tasks.register('copyDevModsClient', Copy) {
+    from configurations.cctRuntime
+    into 'runs/client/mods'
+}
+tasks.configureEach {
+    if (name == 'runServer') dependsOn 'copyDevModsServer'
+    if (name == 'runClient') dependsOn 'copyDevModsClient'
+}
