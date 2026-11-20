@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import ru.wardreg.ccpower.CCPowerConfig;
 
 /**
@@ -38,7 +38,7 @@ public final class ComputerPowerState {
     private final AtomicReference<TurtleEnergyView> turtle = new AtomicReference<>();
 
     /** Last known world position of this computer, refreshed every server tick. */
-    private volatile ServerLevel level;
+    private volatile Level level;
 
     private volatile BlockPos position;
 
@@ -100,12 +100,12 @@ public final class ComputerPowerState {
     }
 
     /** Remember the computer's world position so power-on checks can find FE neighbours. */
-    public void updatePosition(ServerLevel newLevel, BlockPos newPos) {
+    public void updatePosition(Level newLevel, BlockPos newPos) {
         this.level = newLevel;
         this.position = newPos;
     }
 
-    public ServerLevel level() {
+    public Level level() {
         return level;
     }
 

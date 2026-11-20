@@ -1,15 +1,17 @@
 package ru.wardreg.ccpower.dock;
 
 import dan200.computercraft.api.turtle.ITurtleAccess;
-import dan200.computercraft.shared.turtle.blocks.TurtleBlockEntity;
+import dan200.computercraft.shared.turtle.blocks.TileTurtle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.energy.IEnergyStorage;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.energy.CapabilityEnergy;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.energy.IEnergyStorage;
 import ru.wardreg.ccpower.CCPowerConfig;
 import ru.wardreg.ccpower.power.TurtleEnergyView;
 import ru.wardreg.ccpower.registry.ModRegistry;
@@ -70,8 +72,16 @@ public class DockBlockEntity extends BlockEntity {
         }
     };
 
+    private final LazyOptional<IEnergyStorage> storageCap = LazyOptional.of(() -> storage);
+
     public DockBlockEntity(BlockPos pos, BlockState state) {
         super(ModRegistry.DOCK_BE.get(), pos, state);
+    }
+
+    @Override
+    public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
+        if (cap == CapabilityEnergy.ENERGY) return storageCap.cast();
+        return super.getCapability(cap, side);
     }
 
     public IEnergyStorage getStorage() {
@@ -103,8 +113,10 @@ public class DockBlockEntity extends BlockEntity {
         boolean changed = false;
         for (Direction dir : Direction.values()) {
             if (remaining <= 0) break;
-            IEnergyStorage neighbour = level.getCapability(
-                Capabilities.EnergyStorage.BLOCK, pos.relative(dir), dir.getOpposite());
+            BlockEntity neighbourBe = level.getBlockEntity(pos.relative(dir));
+            IEnergyStorage neighbour = neighbourBe == null ? null : neighbourBe
+                .getCapability(CapabilityEnergy.ENERGY, dir.getOpposite())
+                .resolve().orElse(null);
             if (neighbour == null || !neighbour.canExtract()) continue;
             int extracted = neighbour.extractEnergy((int) Math.min(remaining, Integer.MAX_VALUE), false);
             if (extracted > 0) {
@@ -120,7 +132,7 @@ public class DockBlockEntity extends BlockEntity {
     private void tickChargeTurtle(Level level, BlockPos pos) {
         if (buffer <= 0) return;
         BlockEntity above = level.getBlockEntity(pos.above());
-        if (!(above instanceof TurtleBlockEntity turtleEntity)) return;
+        if (!(above instanceof TileTurtle turtleEntity)) return;
 
         ITurtleAccess access = turtleEntity.getAccess();
         if (!(access instanceof TurtleEnergyView turtle)) return;
@@ -135,14 +147,20 @@ public class DockBlockEntity extends BlockEntity {
     }
 
     @Override
-    public void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
+    public void load(CompoundTag tag) {
+        super.load(tag);
         buffer = Math.max(0, tag.getLong(TAG_BUFFER));
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
         tag.putLong(TAG_BUFFER, buffer);
+    }
+
+    @Override
+    public void invalidateCaps() {
+        super.invalidateCaps();
+        storageCap.invalidate();
     }
 }

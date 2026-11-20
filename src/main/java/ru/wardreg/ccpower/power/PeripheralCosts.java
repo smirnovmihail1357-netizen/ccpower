@@ -1,7 +1,8 @@
 package ru.wardreg.ccpower.power;
 
 import dan200.computercraft.api.peripheral.IPeripheral;
-import dan200.computercraft.api.peripheral.PeripheralCapability;
+import dan200.computercraft.shared.Capabilities;
+import net.minecraftforge.common.util.LazyOptional;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -14,13 +15,13 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.Registry;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.neoforged.fml.ModList;
-import net.neoforged.fml.loading.FMLPaths;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.loading.FMLPaths;
 import ru.wardreg.ccpower.CCPowerConfig;
 import ru.wardreg.ccpower.CCPowerMod;
 
@@ -270,8 +271,8 @@ public final class PeripheralCosts {
         List<String> seenOwners = new ArrayList<>();
         try {
             outer:
-            for (BlockEntityType<?> bet : BuiltInRegistries.BLOCK_ENTITY_TYPE) {
-                for (Block block : bet.getValidBlocks()) {
+            for (BlockEntityType<?> bet : Registry.BLOCK_ENTITY_TYPE) {
+                for (Block block : validBlocksOf(bet)) {
                     String type = probePeripheralType(bet, block, level);
                     if (type == null) continue;
                     String owner = namespaceOf(block);
@@ -314,6 +315,18 @@ public final class PeripheralCosts {
      * capability the way CC:Tweaked and most integration mods register theirs.
      * Anything that throws is simply not a probeable peripheral.
      */
+    /**
+     * MC 1.17/1.18 {@link BlockEntityType} keeps validBlocks private and has no
+     * getter, so recover the representative blocks from the block registry.
+     */
+    private static List<Block> validBlocksOf(BlockEntityType<?> bet) {
+        List<Block> result = new ArrayList<>();
+        for (Block block : Registry.BLOCK) {
+            if (bet.isValid(block.defaultBlockState())) result.add(block);
+        }
+        return result;
+    }
+
     private static String probePeripheralType(BlockEntityType<?> bet, Block block, Level level) {
         try {
             var state = block.defaultBlockState();
@@ -325,11 +338,16 @@ public final class PeripheralCosts {
                 return direct.getType();
             }
 
-            var capability = PeripheralCapability.get();
-            IPeripheral peripheral = level.getCapability(capability, BlockPos.ZERO, state, be, null);
+            // Forge 1.17/1.18: CC:T exposes its peripheral through a Forge
+            // capability on the block entity (the era equivalent of the modern
+            // PeripheralCapability BlockCapability lookup).
+            IPeripheral peripheral = null;
+            LazyOptional<IPeripheral> cap = be.getCapability(Capabilities.CAPABILITY_PERIPHERAL, null);
+            peripheral = cap.orElse(null);
             if (peripheral == null) {
                 for (Direction side : Direction.values()) {
-                    peripheral = level.getCapability(capability, BlockPos.ZERO, state, be, side);
+                    cap = be.getCapability(Capabilities.CAPABILITY_PERIPHERAL, side);
+                    peripheral = cap.orElse(null);
                     if (peripheral != null) break;
                 }
             }
@@ -344,7 +362,7 @@ public final class PeripheralCosts {
 
     /** Registry namespace of a block, i.e. the mod id that provides it. */
     private static String namespaceOf(Block block) {
-        return BuiltInRegistries.BLOCK.getKey(block).getNamespace();
+        return Registry.BLOCK.getKey(block).getNamespace();
     }
 
     /** Human-friendly display name of a mod namespace, with a sane fallback. */

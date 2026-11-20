@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 
 modLoader = "javafml"
-loaderVersion = "[4,)"
+loaderVersion = "[40,)"
 license = "MIT"
 
 [[mods]]
@@ -16,30 +16,23 @@ battery recharged at the Recharge Dock (drone station).
 '''
 
 [[dependencies.ccpower]]
-modId = "neoforge"
-type = "required"
-versionRange = "[21.1.248,)"
+modId = "forge"
+mandatory = true
+versionRange = "[40,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.ccpower]]
 modId = "minecraft"
-type = "required"
-versionRange = "[1.21.1]"
+mandatory = true
+versionRange = "[1.18.2]"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.ccpower]]
 modId = "computercraft"
-type = "required"
-versionRange = "[1.116.0,)"
-ordering = "AFTER"
-side = "BOTH"
-
-[[dependencies.ccpower]]
-modId = "jade"
-type = "optional"
-versionRange = "[15.10.0,)"
+mandatory = true
+versionRange = "[1.101.3,)"
 ordering = "AFTER"
 side = "BOTH"
 
