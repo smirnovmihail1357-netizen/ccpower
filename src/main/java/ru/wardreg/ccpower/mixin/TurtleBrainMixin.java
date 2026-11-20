@@ -5,7 +5,6 @@ import dan200.computercraft.api.turtle.TurtleCommand;
 import dan200.computercraft.shared.computer.core.ServerComputer;
 import dan200.computercraft.shared.turtle.core.TurtleBrain;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -99,13 +98,13 @@ public abstract class TurtleBrainMixin implements TurtleEnergyView {
 
     /** Restore the battery from NBT. */
     @Inject(method = "readCommon", at = @At("TAIL"), remap = false)
-    private void ccpower$readBuffer(CompoundTag tag, HolderLookup.Provider registries, CallbackInfo ci) {
+    private void ccpower$readBuffer(CompoundTag tag, CallbackInfo ci) {
         ccpower$buffer = Math.max(0, tag.getLong(CCPower$TAG_BUFFER));
     }
 
     /** Store the battery into NBT. */
     @Inject(method = "writeCommon", at = @At("TAIL"), remap = false)
-    private void ccpower$writeBuffer(CompoundTag tag, HolderLookup.Provider registries, CallbackInfo ci) {
+    private void ccpower$writeBuffer(CompoundTag tag, CallbackInfo ci) {
         tag.putLong(CCPower$TAG_BUFFER, ccpower$buffer);
     }
 }

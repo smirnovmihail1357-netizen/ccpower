@@ -1,7 +1,8 @@
 package ru.wardreg.ccpower.power;
 
 import dan200.computercraft.api.peripheral.IPeripheral;
-import dan200.computercraft.api.peripheral.PeripheralCapability;
+import dan200.computercraft.shared.Capabilities;
+import net.minecraftforge.common.util.LazyOptional;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -17,10 +18,11 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.neoforged.fml.ModList;
-import net.neoforged.fml.loading.FMLPaths;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.loading.FMLPaths;
 import ru.wardreg.ccpower.CCPowerConfig;
 import ru.wardreg.ccpower.CCPowerMod;
 
@@ -35,7 +37,7 @@ import ru.wardreg.ccpower.CCPowerMod;
  *       <b>call</b>, settled with the next tick's cost.</li>
  * </ul>
  *
- * <p>NeoForge's config system cannot grow new keys at runtime, so this file is
+ * <p>Forge's config system cannot grow new keys at runtime, so this file is
  * managed by the mod itself:
  * <ul>
  *   <li>when the server starts, every installed mod's block entities are probed
@@ -271,10 +273,10 @@ public final class PeripheralCosts {
         try {
             outer:
             for (BlockEntityType<?> bet : BuiltInRegistries.BLOCK_ENTITY_TYPE) {
-                for (Block block : bet.getValidBlocks()) {
-                    String type = probePeripheralType(bet, block, level);
+                {
+                    String type = probePeripheralType(bet, net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(), level);
                     if (type == null) continue;
-                    String owner = namespaceOf(block);
+                    String owner = BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(bet).getNamespace();
                     TYPE_OWNER.putIfAbsent(type, owner);
                     double tickDefault = CCPowerConfig.peripheralRFPerTick();
                     // The call price is seeded for EVERY found type, not just
@@ -314,9 +316,9 @@ public final class PeripheralCosts {
      * capability the way CC:Tweaked and most integration mods register theirs.
      * Anything that throws is simply not a probeable peripheral.
      */
-    private static String probePeripheralType(BlockEntityType<?> bet, Block block, Level level) {
+    private static String probePeripheralType(BlockEntityType<?> bet, BlockState blockState, Level level) {
         try {
-            var state = block.defaultBlockState();
+            BlockState state = blockState;
             BlockEntity be = bet.create(BlockPos.ZERO, state);
             if (be == null) return null;
 
@@ -325,11 +327,10 @@ public final class PeripheralCosts {
                 return direct.getType();
             }
 
-            var capability = PeripheralCapability.get();
-            IPeripheral peripheral = level.getCapability(capability, BlockPos.ZERO, state, be, null);
+            IPeripheral peripheral = be.getCapability(Capabilities.CAPABILITY_PERIPHERAL, null).orElse(null);
             if (peripheral == null) {
                 for (Direction side : Direction.values()) {
-                    peripheral = level.getCapability(capability, BlockPos.ZERO, state, be, side);
+                    peripheral = be.getCapability(Capabilities.CAPABILITY_PERIPHERAL, side).orElse(null);
                     if (peripheral != null) break;
                 }
             }
