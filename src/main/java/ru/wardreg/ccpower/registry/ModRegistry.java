@@ -1,67 +1,54 @@
 package ru.wardreg.ccpower.registry;
 
 import java.util.function.Supplier;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
-import net.neoforged.neoforge.registries.DeferredBlock;
-import net.neoforged.neoforge.registries.DeferredItem;
-import net.neoforged.neoforge.registries.DeferredRegister;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.fmllegacy.RegistryObject;
 import ru.wardreg.ccpower.CCPowerMod;
 import ru.wardreg.ccpower.dock.DockBlock;
 import ru.wardreg.ccpower.dock.DockBlockEntity;
 
 /**
- * Mod content registration: the Recharge Dock block, its item, block entity,
- * creative tab and the FE capability.
+ * Mod content registration: the Recharge Dock block, its item, block entity
+ * and creative tab. The dock's FE capability is provided directly by
+ * {@link DockBlockEntity#getCapability} (Forge 1.17/1.18 capability era).
  */
 public final class ModRegistry {
-    public static final DeferredRegister.Blocks BLOCKS =
-        DeferredRegister.createBlocks(CCPowerMod.MODID);
-    public static final DeferredRegister.Items ITEMS =
-        DeferredRegister.createItems(CCPowerMod.MODID);
+    public static final DeferredRegister<Block> BLOCKS =
+        DeferredRegister.create(ForgeRegistries.BLOCKS, CCPowerMod.MODID);
+    public static final DeferredRegister<Item> ITEMS =
+        DeferredRegister.create(ForgeRegistries.ITEMS, CCPowerMod.MODID);
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
-        DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, CCPowerMod.MODID);
-    public static final DeferredRegister<CreativeModeTab> TABS =
-        DeferredRegister.create(Registries.CREATIVE_MODE_TAB, CCPowerMod.MODID);
+        DeferredRegister.create(ForgeRegistries.BLOCK_ENTITIES, CCPowerMod.MODID);
 
-    public static final DeferredBlock<DockBlock> DOCK = BLOCKS.register("dock",
+    public static final RegistryObject<DockBlock> DOCK = BLOCKS.register("dock",
         () -> new DockBlock(DockBlock.blockProperties()));
 
-    public static final DeferredItem<BlockItem> DOCK_ITEM =
-        ITEMS.registerSimpleBlockItem("dock", DOCK);
+    /** Pre-1.19.3 creative tab style: a CreativeModeTab subclass with makeIcon(). */
+    public static final CreativeModeTab MAIN_TAB = new CreativeModeTab("ccpower") {
+        @Override
+        public ItemStack makeIcon() {
+            return new ItemStack(DOCK.get());
+        }
+    };
+
+    public static final RegistryObject<BlockItem> DOCK_ITEM = ITEMS.register("dock",
+        () -> new BlockItem(DOCK.get(), new Item.Properties().tab(MAIN_TAB)));
 
     public static final Supplier<BlockEntityType<DockBlockEntity>> DOCK_BE =
         BLOCK_ENTITIES.register("dock", () ->
             BlockEntityType.Builder.of(DockBlockEntity::new, DOCK.get()).build(null));
 
-    public static final Supplier<CreativeModeTab> MAIN_TAB = TABS.register("main", () ->
-        CreativeModeTab.builder()
-            .title(Component.translatable("itemGroup.ccpower"))
-            .icon(() -> new ItemStack(DOCK_ITEM.get()))
-            .displayItems((params, output) -> output.accept(DOCK_ITEM.get()))
-            .build());
-
-    public static void register(IEventBus modBus) {
+    public static void register(net.minecraftforge.eventbus.api.IEventBus modBus) {
         BLOCKS.register(modBus);
         ITEMS.register(modBus);
         BLOCK_ENTITIES.register(modBus);
-        TABS.register(modBus);
-    }
-
-    /**
-     * Expose the dock's internal buffer as a block FE capability so external
-     * cables and machines can push energy into it.
-     */
-    public static void registerCapabilities(RegisterCapabilitiesEvent event) {
-        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, DOCK_BE.get(),
-            (dock, side) -> dock.getStorage());
     }
 
     private ModRegistry() {}
