@@ -1,6 +1,5 @@
 {
   "type": "minecraft:crafting_shaped",
-  "category": "redstone",
   "pattern": [
     "III",
     "IRI",
@@ -12,7 +11,7 @@
     "E": {"item": "minecraft:lightning_rod"}
   },
   "result": {
-    "id": "ccpower:dock",
+    "item": "ccpower:dock",
     "count": 1
   }
 }

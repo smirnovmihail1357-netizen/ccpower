@@ -4,34 +4,17 @@ import dan200.computercraft.core.computer.ComputerSide;
 import dan200.computercraft.shared.computer.core.ServerComputer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.energy.IEnergyStorage;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Direction;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
+import net.minecraftforge.energy.CapabilityEnergy;
+import net.minecraftforge.energy.IEnergyStorage;
 import ru.wardreg.ccpower.CCPowerConfig;
 import ru.wardreg.ccpower.CCPowerMod;
 
-/**
- * Central RF accounting for all CC:Tweaked computers (computers, turtles,
- * pocket computers - they all pass through the same code path here).
- *
- * <p>Every computer carries a small internal RF buffer (configurable in
- * {@code ccpower-common.toml}), from which the tick cost is drawn. Buffers
- * are refilled from the outside:
- * <ul>
- *   <li>a stationary computer continuously pulls RF from adjacent FE blocks
- *       at {@code power.computerPullRFPerTick};</li>
- *   <li>a turtle is charged only at the Recharge Dock.</li>
- * </ul>
- * A turned-off computer consumes nothing at all (it still recharges). A
- * running computer that cannot pay its tick cost is fully discharged: it is
- * shut down like a normal CC shutdown - the running program is lost and there
- * is no automatic resume. Power-on is denied while the buffer cannot cover a
- * single running tick.
- */
+/** Central RF accounting for all CC:Tweaked computers and turtles. */
 public final class PowerManager {
-    /** Per-computer-id accounting states. */
     private static final Map<Integer, ComputerPowerState> STATES = new ConcurrentHashMap<>();
 
     private PowerManager() {}
@@ -44,55 +27,37 @@ public final class PowerManager {
         return STATES.get(id);
     }
 
-    /** Called from the PeripheralWrapper mixin on every peripheral method call. */
     public static void chargePeripheralCall(int id, String type) {
         state(id).addSurcharge(PeripheralCosts.callCost(type));
     }
 
-    /**
-     * Called from the PeripheralAPI mixin when a peripheral appears or disappears.
-     * The type string (e.g. {@code minecraft:chest}) feeds the per-type cost
-     * table in {@code ccpower-peripherals.toml}.
-     */
     public static void onPeripheralChanged(int id, ComputerSide side, String type) {
         state(id).peripheralChanged(side, type);
     }
 
-    /** Called from the TurtleBrain mixin when the brain is bound to a computer. */
     public static void registerTurtle(int id, TurtleEnergyView turtle) {
         state(id).registerTurtle(turtle);
     }
 
-    /** Called from the ComputerExecutor mixin whenever Lua work was executed. */
     public static void markActive(int id) {
         ComputerPowerState st = STATES.get(id);
         if (st != null) st.markActive();
     }
 
-    /**
-     * Main entry point, called at the head of {@code ServerComputer.tickServer()}.
-     * Recharges the internal buffer and draws the tick cost from it. A computer
-     * that cannot pay (i.e. is fully discharged) is shut down; power-on is
-     * gated in the ComputerExecutor mixin.
-     */
+    /** Called at the head of {@code ServerComputer.update()}. */
     public static void onTickServer(ServerComputer computer) {
         int id = computer.getID();
         ComputerPowerState st = STATES.computeIfAbsent(id, ComputerPowerState::new);
 
-        // Track the position even while off, so power-on checks and the FE
-        // recharge can locate the computer's neighbours.
-        st.updatePosition(computer.getLevel(), computer.getPosition());
-
+        st.updatePosition(computer.getWorld(), computer.getPosition());
         boolean stationary = !st.hasTurtle();
 
         if (!computer.isOn()) {
-            // A turned-off computer consumes nothing, but still recharges.
             st.resetTick();
             if (stationary) refillBuffer(computer, st);
             return;
         }
 
-        // Stationary computers keep pulling RF from their neighbours while on.
         if (stationary) refillBuffer(computer, st);
 
         boolean assumeActive = st.takeActive();
@@ -109,23 +74,12 @@ public final class PowerManager {
         boolean paid = stationary ? st.consumeBuffer(need) : st.consumeTurtle(need);
 
         if (!paid) {
-            // Fully discharged: shut the computer down. The running program is
-            // lost exactly as with a normal CC shutdown - no automatic resume,
-            // turning the machine back on is up to the player.
             logDischarged(id, need, stationary ? st.bufferStored() : st.turtleEnergy());
             computer.shutdown();
             st.resetTick();
         }
     }
 
-    /**
-     * Whether a computer may be turned on right now: its internal buffer must
-     * hold at least one full running tick (idle + active). Pocket computers
-     * without a resolved position are always allowed.
-     *
-     * <p>This is checked when CC:T queues a power-on, so a computer without
-     * energy never boots at all - it simply stays off.
-     */
     public static boolean canPowerOn(int id) {
         ComputerPowerState st = state(id);
         long need = (long) Math.ceil(
@@ -142,11 +96,6 @@ public final class PowerManager {
         return allowed;
     }
 
-    /**
-     * Log a denied power-on attempt. CC:T retries the pending start request
-     * every tick, so the message is logged once per computer and re-armed only
-     * after energy becomes available again.
-     */
     public static void logPowerOnDenied(int id) {
         if (!CCPowerConfig.loggingEnabled() || !CCPowerConfig.logStateTransitions()) return;
         ComputerPowerState st = stateOrNull(id);
@@ -155,7 +104,6 @@ public final class PowerManager {
         }
     }
 
-    /** Diagnostic: why a computer just shut down. */
     public static void logDischarged(int id, long need, long available) {
         if (CCPowerConfig.loggingEnabled() && CCPowerConfig.logStateTransitions()) {
             CCPowerMod.LOG.info(
@@ -164,12 +112,8 @@ public final class PowerManager {
         }
     }
 
-    /**
-     * Pull RF from the FE storages adjacent to the computer into its internal
-     * buffer, up to {@code power.computerPullRFPerTick} per tick.
-     */
     private static void refillBuffer(ServerComputer computer, ComputerPowerState st) {
-        ServerLevel level = computer.getLevel();
+        World level = computer.getWorld();
         BlockPos pos = computer.getPosition();
         if (level == null || pos == null) return;
 
@@ -180,18 +124,14 @@ public final class PowerManager {
         if (got > 0) st.receiveBuffer(got);
     }
 
-    /**
-     * Extract up to {@code max} RF from FE storages adjacent to the given
-     * position, round-robin, without any availability pre-check.
-     *
-     * @return the amount actually extracted
-     */
-    private static long extractUpTo(ServerLevel level, BlockPos pos, long max) {
+    private static long extractUpTo(World level, BlockPos pos, long max) {
         long extracted = 0;
         for (Direction dir : Direction.values()) {
             if (extracted >= max) break;
-            IEnergyStorage storage = level.getCapability(
-                Capabilities.EnergyStorage.BLOCK, pos.relative(dir), dir.getOpposite());
+            TileEntity neighbour = level.getBlockEntity(pos.relative(dir));
+            if (neighbour == null) continue;
+            IEnergyStorage storage = neighbour
+                .getCapability(CapabilityEnergy.ENERGY, dir.getOpposite()).orElse(null);
             if (storage == null || !storage.canExtract()) continue;
             extracted += storage.extractEnergy(
                 (int) Math.min(max - extracted, Integer.MAX_VALUE), false);

@@ -13,17 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import ru.wardreg.ccpower.access.PeripheralOwnerAccess;
 import ru.wardreg.ccpower.power.PowerManager;
 
-/**
- * Charges the per-type call surcharge at the point where the target peripheral
- * is actually known: {@code PeripheralWrapper.call} holds the resolved wrapper
- * (and its cached type string), so the surcharge can be looked up in the
- * {@code [rf_per_call]} table of {@code ccpower-peripherals.toml}.
- *
- * <p>The owning computer id is reached through the synthetic outer reference
- * ({@code this$0}) cast to the {@link PeripheralOwnerAccess} duck interface
- * implemented by the PeripheralAPI mixin. Failed calls (unknown method, error
- * result) are charged as well - the call attempt itself is the billable event.
- */
+/** Charges the per-type call surcharge in {@code PeripheralWrapper.call}. */
 @Mixin(targets = "dan200.computercraft.core.apis.PeripheralAPI$PeripheralWrapper", remap = false)
 public abstract class PeripheralWrapperMixin {
     @Shadow

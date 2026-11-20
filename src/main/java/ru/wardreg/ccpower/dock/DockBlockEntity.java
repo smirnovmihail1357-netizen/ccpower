@@ -1,36 +1,25 @@
 package ru.wardreg.ccpower.dock;
 
 import dan200.computercraft.api.turtle.ITurtleAccess;
-import dan200.computercraft.shared.turtle.blocks.TurtleBlockEntity;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.energy.IEnergyStorage;
+import dan200.computercraft.shared.turtle.blocks.TileTurtle;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.tileentity.ITickableTileEntity;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Direction;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.energy.CapabilityEnergy;
+import net.minecraftforge.energy.IEnergyStorage;
 import ru.wardreg.ccpower.CCPowerConfig;
 import ru.wardreg.ccpower.power.TurtleEnergyView;
 import ru.wardreg.ccpower.registry.ModRegistry;
 
-/**
- * Block entity of the Recharge Dock. Every server tick it:
- * <ol>
- *   <li>pulls up to {@code dock.pullRFPerTick} RF from adjacent FE storages into its
- *       own buffer (the buffer is also exposed as a FE capability, so pipes can push);</li>
- *   <li>transfers up to {@code dock.chargeRFPerTick} RF into the internal battery of the
- *       turtle standing directly on top of the dock.</li>
- * </ol>
- */
-public class DockBlockEntity extends BlockEntity {
-    /** NBT key for the dock's internal buffer. */
+/** Block entity of the Recharge Dock (1.15.2 TileEntity era). */
+public class DockBlockEntity extends TileEntity implements ITickableTileEntity {
     private static final String TAG_BUFFER = "ccpower_rf";
 
-    /** Current RF buffer of the dock. Only touched on the server thread. */
     private long buffer;
 
-    /** FE view of the dock's buffer, registered as a block capability. */
     private final IEnergyStorage storage = new IEnergyStorage() {
         @Override
         public int receiveEnergy(int toReceive, boolean simulate) {
@@ -45,7 +34,6 @@ public class DockBlockEntity extends BlockEntity {
 
         @Override
         public int extractEnergy(int toExtract, boolean simulate) {
-            // The dock never gives energy out through its capability; it only feeds turtles.
             return 0;
         }
 
@@ -70,32 +58,30 @@ public class DockBlockEntity extends BlockEntity {
         }
     };
 
-    public DockBlockEntity(BlockPos pos, BlockState state) {
-        super(ModRegistry.DOCK_BE.get(), pos, state);
+    private final LazyOptional<IEnergyStorage> energyCap = LazyOptional.of(() -> storage);
+
+    public DockBlockEntity() {
+        super(ModRegistry.DOCK_BE.get());
     }
 
     public IEnergyStorage getStorage() {
         return storage;
     }
 
-    /** @return RF currently stored in the dock buffer (server side). */
-    public long getBuffer() {
-        return buffer;
+    @Override
+    public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
+        if (cap == CapabilityEnergy.ENERGY) return energyCap.cast();
+        return super.getCapability(cap, side);
     }
 
-    /** @return configured capacity of the dock buffer. */
-    public long getBufferCapacity() {
-        return CCPowerConfig.dockBufferRF();
+    @Override
+    public void tick() {
+        if (level == null || level.isClientSide) return;
+        tickPull();
+        tickChargeTurtle();
     }
 
-    /** Server-side tick: pull RF from neighbours, charge the turtle above. */
-    public static void serverTick(Level level, BlockPos pos, BlockState state, DockBlockEntity dock) {
-        dock.tickPull(level, pos);
-        dock.tickChargeTurtle(level, pos);
-    }
-
-    /** Pull RF from adjacent blocks into the dock buffer. */
-    private void tickPull(Level level, BlockPos pos) {
+    private void tickPull() {
         long capacity = CCPowerConfig.dockBufferRF();
         long remaining = Math.min(CCPowerConfig.dockPullRFPerTick(), capacity - buffer);
         if (remaining <= 0) return;
@@ -103,10 +89,12 @@ public class DockBlockEntity extends BlockEntity {
         boolean changed = false;
         for (Direction dir : Direction.values()) {
             if (remaining <= 0) break;
-            IEnergyStorage neighbour = level.getCapability(
-                Capabilities.EnergyStorage.BLOCK, pos.relative(dir), dir.getOpposite());
-            if (neighbour == null || !neighbour.canExtract()) continue;
-            int extracted = neighbour.extractEnergy((int) Math.min(remaining, Integer.MAX_VALUE), false);
+            TileEntity neighbour = level.getBlockEntity(getBlockPos().relative(dir));
+            if (neighbour == null) continue;
+            IEnergyStorage storage = neighbour
+                .getCapability(CapabilityEnergy.ENERGY, dir.getOpposite()).orElse(null);
+            if (storage == null || !storage.canExtract()) continue;
+            int extracted = storage.extractEnergy((int) Math.min(remaining, Integer.MAX_VALUE), false);
             if (extracted > 0) {
                 buffer += extracted;
                 remaining -= extracted;
@@ -116,15 +104,15 @@ public class DockBlockEntity extends BlockEntity {
         if (changed) setChanged();
     }
 
-    /** Feed the turtle directly above from the dock buffer. */
-    private void tickChargeTurtle(Level level, BlockPos pos) {
+    private void tickChargeTurtle() {
         if (buffer <= 0) return;
-        BlockEntity above = level.getBlockEntity(pos.above());
-        if (!(above instanceof TurtleBlockEntity turtleEntity)) return;
+        TileEntity above = level.getBlockEntity(getBlockPos().above());
+        if (!(above instanceof TileTurtle)) return;
 
-        ITurtleAccess access = turtleEntity.getAccess();
-        if (!(access instanceof TurtleEnergyView turtle)) return;
+        ITurtleAccess access = ((TileTurtle) above).getAccess();
+        if (!(access instanceof TurtleEnergyView)) return;
 
+        TurtleEnergyView turtle = (TurtleEnergyView) access;
         long transfer = Math.min(buffer, CCPowerConfig.dockChargeRFPerTick());
         if (transfer <= 0) return;
         long accepted = turtle.ccpower$receiveEnergy(transfer);
@@ -135,14 +123,15 @@ public class DockBlockEntity extends BlockEntity {
     }
 
     @Override
-    public void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
+    public void load(CompoundNBT tag) {
+        super.load(tag);
         buffer = Math.max(0, tag.getLong(TAG_BUFFER));
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    public CompoundNBT save(CompoundNBT tag) {
+        super.save(tag);
         tag.putLong(TAG_BUFFER, buffer);
+        return tag;
     }
 }
