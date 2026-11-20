@@ -1,0 +1,22 @@
+# Gradle
+.gradle/
+build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+bin/
+
+# Runtime / dev environment
+run/
+runs/
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

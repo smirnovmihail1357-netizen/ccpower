@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: MIT
+
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId = "ccpower"
+version = "0.5.1"
+displayName = "CC: Power"
+authors = "wardreg"
+description = '''
+Adds RF (Forge Energy) power consumption to CC:Tweaked computers and turtles.
+Computers draw energy from adjacent blocks; turtles carry a small internal
+battery recharged at the Recharge Dock (drone station).
+'''
+
+[[dependencies.ccpower]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1.248,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.ccpower]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21.1]"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.ccpower]]
+modId = "computercraft"
+type = "required"
+versionRange = "[1.116.0,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.ccpower]]
+modId = "jade"
+type = "optional"
+versionRange = "[15.10.0,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[mixins]]
+config = "ccpower.mixins.json"

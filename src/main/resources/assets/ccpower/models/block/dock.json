@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "ccpower:block/dock_top",
+    "side": "ccpower:block/dock_side",
+    "bottom": "ccpower:block/dock_bottom"
+  }
+}
