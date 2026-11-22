@@ -6,7 +6,7 @@ license = "MIT"
 
 [[mods]]
 modId = "ccpower"
-version = "0.5.1"
+version = "0.8.0"
 displayName = "CC: Power"
 authors = "wardreg"
 description = '''
@@ -33,6 +33,13 @@ side = "BOTH"
 modId = "computercraft"
 type = "required"
 versionRange = "[1.122.0,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.ccpower]]
+modId = "jade"
+type = "optional"
+versionRange = "[26.3.5,)"
 ordering = "AFTER"
 side = "BOTH"
 

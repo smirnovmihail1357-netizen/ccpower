@@ -3,7 +3,7 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.148'
 }
 
-version = '0.5.1'
+version = '0.8.0'
 group = 'ru.wardreg.ccpower'
 
 // Minecraft 26.x ships Java 25 (CC:T class files are major version 69).
@@ -43,6 +43,13 @@ repositories {
             includeGroup 'cc.tweaked'
         }
     }
+    maven {
+        // Modrinth maven, used only for the optional Jade compile-time API.
+        url = 'https://api.modrinth.com/maven'
+        content {
+            includeGroup 'maven.modrinth'
+        }
+    }
 }
 
 configurations {
@@ -53,6 +60,9 @@ dependencies {
     // CC:Tweaked for MC 26.3 (NeoForge jar, published under the "forge" classifier).
     compileOnly 'cc.tweaked:cc-tweaked-26.3-forge:1.122.0'
     cctRuntime 'cc.tweaked:cc-tweaked-26.3-forge:1.122.0'
+    // Jade tooltip integration (compile-only; the plugin class is only loaded
+    // when Jade is installed at runtime).
+    compileOnly 'maven.modrinth:jade:26.3.5+neoforge'
 }
 
 // Make CC:Tweaked available in local dev server runs.

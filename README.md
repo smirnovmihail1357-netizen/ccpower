@@ -2,9 +2,27 @@
 
 **RF energy consumption for [CC: Tweaked](https://modrinth.com/mod/cc-tweaked) computers and turtles.**
 
-Minecraft 1.21.1 · NeoForge 21.1.x · requires CC: Tweaked 1.116+
+Minecraft 1.15.2 – 26.3 · Forge / NeoForge / Fabric · requires CC: Tweaked
 
 [English](README.md) · [Русский](README.ru.md)
+
+## Supported versions
+
+| Minecraft | Loaders |
+|---|---|
+| 26.1.2 / 26.2 / 26.3 | NeoForge |
+| 1.21.11 / 1.21.8 / 1.21.7 / 1.21 | NeoForge + Fabric |
+| 1.21.1 | NeoForge + Fabric |
+| 1.20.6 / 1.20.5 / 1.20.4 | NeoForge + Fabric |
+| 1.20.1 / 1.20 | Forge + Fabric |
+| 1.19.4 | Forge + Fabric |
+| 1.19.3 / 1.19.2 / 1.19.1 / 1.19 | Forge |
+| 1.18.2 / 1.18.1 / 1.18 / 1.17.1 | Forge |
+| 1.16.5 (works on 1.16.4) / 1.15.2 | Forge |
+
+On Fabric the energy API is embedded (Team Reborn Energy) - no extra mod
+required. Each version lives on its own `mc/<version>` branch in this repo.
+Jade integration is included on modern NeoForge builds (optional dependency).
 
 Computers and turtles from CC: Tweaked become real energy consumers. They draw
 RF/FE (the Forge energy system used by Thermal, Mekanism, Create: Power Grid
@@ -64,7 +82,8 @@ to `0.0` to disable it.
 
 ## Dynamic configuration
 
-`config/ccpower-common.toml` (NeoForge config, hot-reloaded):
+`config/ccpower-local.toml` (NeoForge config, hot-reloaded; on MC 26.x FML the
+ former "common" config type is called LOCAL):
 
 | Key | Default | Meaning |
 |---|---|---|
@@ -85,8 +104,40 @@ to `0.0` to disable it.
 ## Jade
 
 With [Jade](https://modrinth.com/mod/jade) installed, pointing at a computer,
-turtle or dock shows its buffer/battery level, and a computer that is off due
-to missing energy is labelled accordingly. Jade is optional.
+turtle or dock shows its buffer/battery level as a progress bar - the same
+generic energy bar Jade renders for FE storages, including its standard
+numeric "current / capacity FE" label. Jade is optional.
+
+Admins can toggle an extra diagnostic line with `/ccpower debug`. It shows the
+RF/tick charge and discharge rates and the current buffer of the targeted
+computer. The flag is per player and is not persisted.
+
+## Lua API
+
+Full reference with all methods and examples: [docs/API.md](docs/API.md).
+
+Every computer has a `ccpower` API:
+
+| Method | Returns |
+|---|---|
+| `ccpower.getEnergy()` | Current RF in the internal buffer/battery |
+| `ccpower.getCapacity()` | Capacity of that store |
+| `ccpower.getChargeRate()` | RF received on the last server tick |
+| `ccpower.getDischargeRate()` | RF spent on the last server tick |
+
+Rates are measured per game tick (RF/t). A computer that is turned off still
+reports the charge it receives.
+
+The Recharge Dock is also a peripheral of type `ccpower_dock`. An adjacent
+computer (or a wired modem) can read its internal state:
+
+```lua
+local dock = peripheral.find("ccpower_dock")
+dock.getEnergy()       -- RF in the dock buffer
+dock.getCapacity()     -- buffer capacity
+dock.getPullRate()     -- RF/t pulled from neighbours
+dock.getChargeRate()   -- RF/t delivered to the turtle
+```
 
 ## Building
 

@@ -6,8 +6,9 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 /**
  * All energy costs of the mod, in RF (Forge Energy) per game tick.
  *
- * <p>The common config file ({@code ccpower-common.toml}) is watched by NeoForge and
- * reloaded dynamically whenever it changes on disk - no restart is required.
+ * <p>The local config file ({@code ccpower-local.toml}; called "common" on older
+ * NeoForge) is watched by NeoForge and reloaded dynamically whenever it changes
+ * on disk - no restart is required.
  */
 public final class CCPowerConfig {
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
