@@ -2,7 +2,7 @@
 
 **RF energy consumption for [CC: Tweaked](https://modrinth.com/mod/cc-tweaked) computers and turtles.**
 
-Minecraft 1.21.1 · NeoForge 21.1.x · requires CC: Tweaked 1.116+
+Minecraft 1.19.1 · Forge 42.0.x · requires CC: Tweaked 1.100.9+
 
 [English](README.md) · [Русский](README.ru.md)
 
@@ -17,7 +17,7 @@ and many other tech mods) and stop working when the energy runs out.
 - A computer has a **small internal RF buffer** (no crafting, no batteries -
   the buffer is part of the block) that is refilled from **adjacent blocks**
   holding FE energy (energy cells, cables, machines - anything exposing the
-  NeoForge energy capability).
+  Forge Energy capability).
 - Every game tick a running computer pays: `idle + (program running ? active : 0)
   + every attached peripheral's per-type price + call surcharges`.
 - If the buffer cannot cover the tick's cost, the computer **shuts down**
@@ -64,7 +64,7 @@ to `0.0` to disable it.
 
 ## Dynamic configuration
 
-`config/ccpower-common.toml` (NeoForge config, hot-reloaded):
+`config/ccpower-common.toml` (Forge config, hot-reloaded):
 
 | Key | Default | Meaning |
 |---|---|---|
@@ -84,9 +84,24 @@ to `0.0` to disable it.
 
 ## Jade
 
-With [Jade](https://modrinth.com/mod/jade) installed, pointing at a computer,
-turtle or dock shows its buffer/battery level, and a computer that is off due
-to missing energy is labelled accordingly. Jade is optional.
+This Forge 1.19.1 build has **no Jade integration**: the 0.8.0 Jade energy bar
+uses the modern Jade API and could not be ported. The `/ccpower debug` command
+and the `tooltip.ccpower.debug` translation key are present, but no tooltip is
+rendered by this build.
+
+## Lua API
+
+Full reference with all methods and examples: [docs/API.md](docs/API.md).
+
+Every computer has a `ccpower` API (`getEnergy()`, `getCapacity()`,
+`getChargeRate()`, `getDischargeRate()`). The same methods are added to every
+`computer`/`turtle` peripheral so a neighbour can be inspected with
+`peripheral.wrap(...)`. The Recharge Dock is exposed as a `ccpower_dock`
+peripheral with `getEnergy()`, `getCapacity()`, `getPullRate()` and
+`getChargeRate()`.
+
+Admins can toggle the (currently unrendered) diagnostic line with
+`/ccpower debug`.
 
 ## Building
 
@@ -94,7 +109,7 @@ to missing energy is labelled accordingly. Jade is optional.
 ./gradlew build
 ```
 
-Java 21. The jar lands in `build/libs/`.
+Java 17. The jar lands in `build/libs/`.
 
 ## License
 
