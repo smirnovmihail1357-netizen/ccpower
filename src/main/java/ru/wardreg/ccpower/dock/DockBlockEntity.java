@@ -1,6 +1,7 @@
 package ru.wardreg.ccpower.dock;
 
 import dan200.computercraft.api.turtle.ITurtleAccess;
+import dan200.computercraft.shared.Capabilities;
 import dan200.computercraft.shared.turtle.blocks.TileTurtle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -19,7 +20,18 @@ import ru.wardreg.ccpower.registry.ModRegistry;
 /** Block entity of the Recharge Dock: pulls FE from neighbours, charges the turtle above. */
 public class DockBlockEntity extends BlockEntity {
     private static final String TAG_BUFFER = "ccpower_rf";
+
+    /** Current RF buffer of the dock. Only touched on the server thread. */
     private long buffer;
+
+    /** RF pulled from neighbours on the last server tick. */
+    private long lastPull;
+
+    /** RF transferred into a turtle on the last server tick. */
+    private long lastCharge;
+
+    /** Cached CC:T peripheral exposing the dock's state to Lua. */
+    private final DockPeripheral peripheral = new DockPeripheral(this);
 
     private final IEnergyStorage storage = new IEnergyStorage() {
         @Override
@@ -51,14 +63,18 @@ public class DockBlockEntity extends BlockEntity {
 
     private final LazyOptional<IEnergyStorage> storageCap = LazyOptional.of(() -> storage);
 
+    /** CC:T peripheral capability exposing the dock's internal state. */
+    private final LazyOptional<DockPeripheral> peripheralCap = LazyOptional.of(() -> peripheral);
+
     public DockBlockEntity(BlockPos pos, BlockState state) {
         super(ModRegistry.DOCK_BE.get(), pos, state);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
-        if (cap == CapabilityEnergy.ENERGY) return (LazyOptional<T>) storageCap;
+        if (cap == CapabilityEnergy.ENERGY) return storageCap.cast();
+        // Forge capability era: expose the dock directly to adjacent computers.
+        if (cap == Capabilities.CAPABILITY_PERIPHERAL) return peripheralCap.cast();
         return super.getCapability(cap, side);
     }
 
@@ -66,7 +82,18 @@ public class DockBlockEntity extends BlockEntity {
     public long getBuffer() { return buffer; }
     public long getBufferCapacity() { return CCPowerConfig.dockBufferRF(); }
 
+    /** @return RF/t pulled from FE neighbours on the last completed tick. */
+    public long getPullRate() { return lastPull; }
+
+    /** @return RF/t transferred into a turtle on the last completed tick. */
+    public long getChargeRate() { return lastCharge; }
+
+    /** @return the CC:T peripheral exposing this dock's internal state. */
+    public DockPeripheral getPeripheral() { return peripheral; }
+
     public static void serverTick(Level level, BlockPos pos, BlockState state, DockBlockEntity dock) {
+        dock.lastPull = 0;
+        dock.lastCharge = 0;
         dock.tickPull(level, pos);
         dock.tickChargeTurtle(level, pos);
     }
@@ -85,6 +112,7 @@ public class DockBlockEntity extends BlockEntity {
             int extracted = neighbour.extractEnergy((int) Math.min(remaining, Integer.MAX_VALUE), false);
             if (extracted > 0) {
                 buffer += extracted;
+                lastPull += extracted;
                 remaining -= extracted;
                 changed = true;
             }
@@ -103,6 +131,7 @@ public class DockBlockEntity extends BlockEntity {
         long accepted = turtle.ccpower$receiveEnergy(transfer);
         if (accepted > 0) {
             buffer -= accepted;
+            lastCharge += accepted;
             setChanged();
         }
     }
