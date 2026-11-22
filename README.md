@@ -82,11 +82,36 @@ to `0.0` to disable it.
 | `dock.chargeRFPerTick` | 250 | Drone Dock charge rate |
 | `logging.*` | — | What the mod writes to the log |
 
-## Jade
+## Lua API
 
-With [Jade](https://modrinth.com/mod/jade) installed, pointing at a computer,
-turtle or dock shows its buffer/battery level, and a computer that is off due
-to missing energy is labelled accordingly. Jade is optional.
+Full reference with all methods and examples: [docs/API.md](docs/API.md).
+
+Every computer has a `ccpower` API:
+
+| Method | Returns |
+|---|---|
+| `ccpower.getEnergy()` | Current RF in the internal buffer/battery |
+| `ccpower.getCapacity()` | Capacity of that store |
+| `ccpower.getChargeRate()` | RF received on the last server tick |
+| `ccpower.getDischargeRate()` | RF spent on the last server tick |
+
+Rates are measured per game tick (RF/t). A computer that is turned off still
+reports the charge it receives. The same methods are added to every computer /
+turtle peripheral (`peripheral.wrap(...)`), so another computer can inspect its
+neighbours.
+
+The Recharge Dock is also a peripheral of type `ccpower_dock`:
+
+```lua
+local dock = peripheral.find("ccpower_dock")
+dock.getEnergy()       -- RF in the dock buffer
+dock.getCapacity()     -- buffer capacity
+dock.getPullRate()     -- RF/t pulled from neighbours
+dock.getChargeRate()   -- RF/t delivered to the turtle
+```
+
+Admins can toggle a per-player diagnostics flag with `/ccpower debug`. The Jade
+tooltip integration exists only in newer NeoForge ports.
 
 ## Building
 
