@@ -85,8 +85,40 @@ to `0.0` to disable it.
 ## Jade
 
 With [Jade](https://modrinth.com/mod/jade) installed, pointing at a computer,
-turtle or dock shows its buffer/battery level, and a computer that is off due
-to missing energy is labelled accordingly. Jade is optional.
+turtle or dock shows its buffer/battery level as a progress bar - the same
+generic energy bar Jade renders for FE storages, including its standard
+numeric "current / capacity FE" label. Jade is optional.
+
+Admins can toggle an extra diagnostic line with `/ccpower debug`. It shows the
+RF/tick charge and discharge rates and the current buffer of the targeted
+computer. The flag is per player and is not persisted.
+
+## Lua API
+
+Full reference with all methods and examples: [docs/API.md](docs/API.md).
+
+Every computer has a `ccpower` API:
+
+| Method | Returns |
+|---|---|
+| `ccpower.getEnergy()` | Current RF in the internal buffer/battery |
+| `ccpower.getCapacity()` | Capacity of that store |
+| `ccpower.getChargeRate()` | RF received on the last server tick |
+| `ccpower.getDischargeRate()` | RF spent on the last server tick |
+
+Rates are measured per game tick (RF/t). A computer that is turned off still
+reports the charge it receives.
+
+The Recharge Dock is also a peripheral of type `ccpower_dock`. An adjacent
+computer (or a wired modem) can read its internal state:
+
+```lua
+local dock = peripheral.find("ccpower_dock")
+dock.getEnergy()       -- RF in the dock buffer
+dock.getCapacity()     -- buffer capacity
+dock.getPullRate()     -- RF/t pulled from neighbours
+dock.getChargeRate()   -- RF/t delivered to the turtle
+```
 
 ## Building
 
