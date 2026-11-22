@@ -1,7 +1,12 @@
 package ru.wardreg.ccpower;
 
+import dan200.computercraft.api.ComputerCraftAPI;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.fmlserverevents.FMLServerStartedEvent;
 import net.minecraftforge.fml.ModLoadingContext;
@@ -10,6 +15,10 @@ import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.wardreg.ccpower.debug.CCPowerCommands;
+import ru.wardreg.ccpower.dock.DockBlockEntity;
+import ru.wardreg.ccpower.lua.ComputerStatePeripheral;
+import ru.wardreg.ccpower.lua.PowerAPI;
 import ru.wardreg.ccpower.power.PeripheralCosts;
 import ru.wardreg.ccpower.registry.ModRegistry;
 
@@ -39,6 +48,14 @@ public final class CCPowerMod {
     public CCPowerMod() {
         ModRegistry.register(FMLJavaModLoadingContext.get().getModEventBus());
 
+        // Lua API: CC:T builds a per-computer `ccpower` API through our factory.
+        ComputerCraftAPI.registerAPIFactory(system -> new PowerAPI(system.getID()));
+        // Adds the same state methods to every computer/turtle peripheral.
+        ComputerCraftAPI.registerGenericSource(new ComputerStatePeripheral());
+        // Expose the dock's internal state to adjacent computers as a CC:T peripheral.
+        // CC:T 1.99.x (Forge 1.17.1) uses peripheral providers, not a capability.
+        ComputerCraftAPI.registerPeripheralProvider(CCPowerMod::getDockPeripheral);
+
         // Common config: watched by Forge and reloaded dynamically on file change.
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, CCPowerConfig.SPEC);
         FMLJavaModLoadingContext.get().getModEventBus().addListener(CCPowerConfig::onConfigReloading);
@@ -50,6 +67,18 @@ public final class CCPowerMod {
         MinecraftForge.EVENT_BUS.addListener((TickEvent.ServerTickEvent event) ->
             PeripheralCosts.watchServerTick());
 
+        // Admin-only debug toggle for the optional Jade diagnostic line.
+        MinecraftForge.EVENT_BUS.addListener(CCPowerCommands::register);
+
         CCPowerMod.LOG.info("CC: Power initialized");
+    }
+
+    private static LazyOptional<dan200.computercraft.api.peripheral.IPeripheral> getDockPeripheral(
+        Level level, BlockPos pos, Direction side) {
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be instanceof DockBlockEntity dock) {
+            return LazyOptional.of(() -> dock.getPeripheral());
+        }
+        return LazyOptional.empty();
     }
 }

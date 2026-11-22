@@ -84,9 +84,41 @@ to `0.0` to disable it.
 
 ## Jade
 
-With [Jade](https://modrinth.com/mod/jade) installed, pointing at a computer,
-turtle or dock shows its buffer/battery level, and a computer that is off due
-to missing energy is labelled accordingly. Jade is optional.
+Jade integration is not available on Minecraft 1.17.1: the energy-bar API used
+by CC: Power 0.8.0 does not exist for this Forge generation, so this port ships
+no Jade plugin. The `/ccpower debug` command still toggles a per-player flag,
+but nothing renders it without a Jade integration.
+
+## Lua API
+
+Full reference with all methods and examples: [docs/API.md](docs/API.md).
+
+Every computer has a `ccpower` API:
+
+| Method | Returns |
+|---|---|
+| `ccpower.getEnergy()` | Current RF in the internal buffer/battery |
+| `ccpower.getCapacity()` | Capacity of that store |
+| `ccpower.getChargeRate()` | RF received on the last server tick |
+| `ccpower.getDischargeRate()` | RF spent on the last server tick |
+
+Rates are measured per game tick (RF/t). A computer that is turned off still
+reports the charge it receives.
+
+The Recharge Dock is also a peripheral of type `ccpower_dock`. An adjacent
+computer (or a wired modem) can read its internal state:
+
+```lua
+local dock = peripheral.find("ccpower_dock")
+dock.getEnergy()       -- RF in the dock buffer
+dock.getCapacity()     -- buffer capacity
+dock.getPullRate()     -- RF/t pulled from neighbours
+dock.getChargeRate()   -- RF/t delivered to the turtle
+```
+
+Computer and turtle peripherals (`computer` / `turtle`) additionally expose
+`getEnergy()`, `getCapacity()`, `getChargeRate()` and `getDischargeRate()`, so a
+computer can inspect its neighbours.
 
 ## Building
 

@@ -17,7 +17,9 @@ import ru.wardreg.ccpower.dock.DockBlockEntity;
 /**
  * Mod content registration: the Recharge Dock block, its item, block entity
  * and creative tab. The dock's FE capability is provided directly by
- * {@link DockBlockEntity#getCapability} (Forge 1.17/1.18 capability era).
+ * {@link DockBlockEntity#getCapability} (Forge 1.17/1.18 capability era). The
+ * dock's CC:T peripheral is exposed through a peripheral provider registered in
+ * {@code CCPowerMod}: this CC:T version has no peripheral capability.
  */
 public final class ModRegistry {
     public static final DeferredRegister<Block> BLOCKS =
