@@ -30,6 +30,9 @@ public interface CcpPlatform {
     /** Extract up to {@code max} RF from the FE storage at one position. */
     long extractEnergy(Level level, BlockPos pos, Direction side, long max);
 
+    /** Register the dock as a CC:T peripheral through the loader's native API. */
+    void registerDockPeripheral();
+
     /** Create the loader-neutral energy view of a dock's buffer. */
     EnergyView createDockEnergy(DockBlockEntity dock);
 

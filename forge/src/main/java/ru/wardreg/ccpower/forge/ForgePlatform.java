@@ -1,5 +1,6 @@
 package ru.wardreg.ccpower.forge;
 
+import dan200.computercraft.api.ForgeComputerCraftAPI;
 import dan200.computercraft.api.peripheral.IPeripheral;
 import dan200.computercraft.shared.Capabilities;
 import java.nio.file.Path;
@@ -58,6 +59,15 @@ public final class ForgePlatform implements CcpPlatform {
 
     public DockBlockEntity createDockBlockEntity(BlockPos pos, BlockState state) {
         return new ForgeDockBlockEntity(pos, state);
+    }
+
+    public void registerDockPeripheral() {
+        ForgeComputerCraftAPI.registerPeripheralProvider((level, pos, side) -> {
+            BlockEntity be = level.getBlockEntity(pos);
+            return be instanceof DockBlockEntity dock
+                ? LazyOptional.of(() -> dock.getPeripheral())
+                : LazyOptional.empty();
+        });
     }
 
     public EnergyView createDockEnergy(DockBlockEntity dock) {

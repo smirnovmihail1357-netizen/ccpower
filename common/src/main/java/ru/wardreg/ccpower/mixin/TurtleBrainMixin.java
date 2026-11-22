@@ -44,6 +44,9 @@ public abstract class TurtleBrainMixin implements TurtleEnergyView {
         long space = CCPowerConfig.turtleBufferRF() - ccpower$buffer;
         long accepted = Math.max(0, Math.min(amount, space));
         ccpower$buffer += accepted;
+        if (accepted > 0 && ccpower$computerId >= 0) {
+            PowerManager.state(ccpower$computerId).recordCharge(accepted);
+        }
         return accepted;
     }
 
@@ -70,7 +73,11 @@ public abstract class TurtleBrainMixin implements TurtleEnergyView {
     private void ccpower$chargeAction(TurtleCommand command, CallbackInfoReturnable<MethodResult> cir) {
         if (ccpower$computerId < 0) return;
         long cost = (long) CCPowerConfig.turtleActionRF();
-        if (cost <= 0 || ccpower$tryConsume(cost)) return;
+        if (cost <= 0) return;
+        if (ccpower$tryConsume(cost)) {
+            PowerManager.state(ccpower$computerId).recordDischarge(cost);
+            return;
+        }
         cir.setReturnValue(MethodResult.of(Boolean.FALSE, "Out of RF energy"));
     }
 

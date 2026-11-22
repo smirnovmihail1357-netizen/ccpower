@@ -1,5 +1,6 @@
 package ru.wardreg.ccpower.fabric;
 
+import dan200.computercraft.api.peripheral.PeripheralLookup;
 import java.nio.file.Path;
 import net.fabricmc.fabric.api.transfer.v1.transaction.Transaction;
 import net.fabricmc.loader.api.FabricLoader;
@@ -52,6 +53,11 @@ public final class FabricPlatform implements CcpPlatform {
 
     public DockBlockEntity createDockBlockEntity(BlockPos pos, BlockState state) {
         return new DockBlockEntity(pos, state);
+    }
+
+    public void registerDockPeripheral() {
+        PeripheralLookup.get().registerForBlockEntity(
+            (dock, side) -> dock.getPeripheral(), ModRegistry.DOCK_BE);
     }
 
     public EnergyView createDockEnergy(DockBlockEntity dock) {
