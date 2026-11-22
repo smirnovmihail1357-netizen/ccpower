@@ -11,7 +11,7 @@ buildscript {
 apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'java'
 
-version = '0.5.1'
+version = '0.8.0'
 group = 'ru.wardreg.ccpower'
 archivesBaseName = 'ccpower'
 
@@ -52,10 +52,15 @@ configurations {
 // CC:T production jars are SRG-named; fg.deobf remaps them to the dev mapping
 // so both compile and runServer see the same class names.
 def cctDep = 'cc.tweaked:cc-tweaked-1.16.5:1.101.3'
+// Jade 2.8.3 is the last Forge 1.16.5 line; its API lives in mcp.mobius.waila.api
+// and has no energy-extension API, so the 0.8.0 Jade bar cannot be reproduced.
+// Compile-only: the plugin class is loaded only when Jade is installed.
+def jadeDep = 'jade:jade:2.8.3'
 
 dependencies {
     minecraft 'net.minecraftforge:forge:1.16.5-36.2.42'
     compileOnly fg.deobf(cctDep)
+    compileOnly fg.deobf(jadeDep)
     cctDev fg.deobf(cctDep)
     implementation 'org.spongepowered:mixin:0.8.4'
     annotationProcessor 'org.spongepowered:mixin:0.8.4:processor'
