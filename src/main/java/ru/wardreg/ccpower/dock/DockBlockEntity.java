@@ -20,6 +20,15 @@ public class DockBlockEntity extends TileEntity implements ITickableTileEntity {
 
     private long buffer;
 
+    /** RF pulled from neighbours on the last server tick. */
+    private long lastPull;
+
+    /** RF transferred into a turtle on the last server tick. */
+    private long lastCharge;
+
+    /** Cached CC:T peripheral exposing the dock's state to Lua. */
+    private final DockPeripheral peripheral = new DockPeripheral(this);
+
     private final IEnergyStorage storage = new IEnergyStorage() {
         @Override
         public int receiveEnergy(int toReceive, boolean simulate) {
@@ -68,6 +77,29 @@ public class DockBlockEntity extends TileEntity implements ITickableTileEntity {
         return storage;
     }
 
+    public long getBuffer() {
+        return buffer;
+    }
+
+    public long getBufferCapacity() {
+        return CCPowerConfig.dockBufferRF();
+    }
+
+    /** @return RF/t pulled from FE neighbours on the last completed tick. */
+    public long getPullRate() {
+        return lastPull;
+    }
+
+    /** @return RF/t transferred into a turtle on the last completed tick. */
+    public long getChargeRate() {
+        return lastCharge;
+    }
+
+    /** @return the CC:T peripheral exposing this dock's internal state. */
+    public DockPeripheral getPeripheral() {
+        return peripheral;
+    }
+
     @Override
     public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
         if (cap == CapabilityEnergy.ENERGY) return energyCap.cast();
@@ -77,6 +109,8 @@ public class DockBlockEntity extends TileEntity implements ITickableTileEntity {
     @Override
     public void tick() {
         if (level == null || level.isClientSide) return;
+        lastPull = 0;
+        lastCharge = 0;
         tickPull();
         tickChargeTurtle();
     }
@@ -97,6 +131,7 @@ public class DockBlockEntity extends TileEntity implements ITickableTileEntity {
             int extracted = storage.extractEnergy((int) Math.min(remaining, Integer.MAX_VALUE), false);
             if (extracted > 0) {
                 buffer += extracted;
+                lastPull += extracted;
                 remaining -= extracted;
                 changed = true;
             }
@@ -118,6 +153,7 @@ public class DockBlockEntity extends TileEntity implements ITickableTileEntity {
         long accepted = turtle.ccpower$receiveEnergy(transfer);
         if (accepted > 0) {
             buffer -= accepted;
+            lastCharge += accepted;
             setChanged();
         }
     }

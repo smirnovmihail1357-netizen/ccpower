@@ -18,7 +18,7 @@ def fgCache = new File(gradle.gradleUserHomeDir, 'caches/forge_gradle')
 new File(fgCache, 'mcp_repo/de/oceanlabs/mcp/mcp_config/1.15.2').mkdirs()
 new File(fgCache, 'minecraft_user_repo/de/oceanlabs/mcp/mcp_config/1.15.2-20200515.085601').mkdirs()
 
-version = '0.5.1'
+version = '0.8.0'
 group = 'ru.wardreg.ccpower'
 archivesBaseName = 'ccpower'
 

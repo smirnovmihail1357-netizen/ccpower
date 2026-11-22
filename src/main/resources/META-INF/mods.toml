@@ -7,7 +7,7 @@ issueTrackerURL = "https://github.com/smirnovmihail1357-netizen/ccpower/issues"
 
 [[mods]]
 modId = "ccpower"
-version = "0.5.1"
+version = "0.8.0"
 displayName = "CC: Power"
 authors = "wardreg"
 description = '''

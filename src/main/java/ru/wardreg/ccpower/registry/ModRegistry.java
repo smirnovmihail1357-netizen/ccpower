@@ -1,12 +1,15 @@
 package ru.wardreg.ccpower.registry;
 
+import dan200.computercraft.api.ComputerCraftAPI;
 import java.util.function.Supplier;
 import net.minecraft.block.Block;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityType;
+import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -45,6 +48,20 @@ public final class ModRegistry {
         BLOCKS.register(modBus);
         ITEMS.register(modBus);
         BLOCK_ENTITIES.register(modBus);
+    }
+
+    /**
+     * Expose the dock's internal state to adjacent computers. CC:T 1.97 has no
+     * PeripheralCapability: peripherals come from IPeripheralProvider instead.
+     */
+    public static void registerPeripherals() {
+        ComputerCraftAPI.registerPeripheralProvider((world, pos, side) -> {
+            TileEntity tile = world.getBlockEntity(pos);
+            if (tile instanceof DockBlockEntity) {
+                return LazyOptional.of(() -> ((DockBlockEntity) tile).getPeripheral());
+            }
+            return LazyOptional.empty();
+        });
     }
 
     private ModRegistry() {}

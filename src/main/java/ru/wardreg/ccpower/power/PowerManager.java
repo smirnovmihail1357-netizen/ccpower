@@ -48,6 +48,7 @@ public final class PowerManager {
     public static void onTickServer(ServerComputer computer) {
         int id = computer.getID();
         ComputerPowerState st = STATES.computeIfAbsent(id, ComputerPowerState::new);
+        st.resetRates();
 
         st.updatePosition(computer.getWorld(), computer.getPosition());
         boolean stationary = !st.hasTurtle();
@@ -72,6 +73,7 @@ public final class PowerManager {
         long need = (long) Math.ceil(cost);
 
         boolean paid = stationary ? st.consumeBuffer(need) : st.consumeTurtle(need);
+        if (paid) st.recordDischarge(need);
 
         if (!paid) {
             logDischarged(id, need, stationary ? st.bufferStored() : st.turtleEnergy());
@@ -121,7 +123,10 @@ public final class PowerManager {
         if (room <= 0) return;
         long want = Math.min(room, CCPowerConfig.computerPullRFPerTick());
         long got = extractUpTo(level, pos, want);
-        if (got > 0) st.receiveBuffer(got);
+        if (got > 0) {
+            long accepted = st.receiveBuffer(got);
+            st.recordCharge(accepted);
+        }
     }
 
     private static long extractUpTo(World level, BlockPos pos, long max) {
