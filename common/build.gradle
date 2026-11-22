@@ -7,4 +7,6 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
     modCompileOnly "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
     modCompileOnly "cc.tweaked:cc-tweaked-${rootProject.minecraft_version}-fabric:${rootProject.cc_tweaked_fabric_version}"
+    // Optional Jade integration; the plugin class is only loaded when Jade is present.
+    modCompileOnly "maven.modrinth:jade:${rootProject.jade_version}+fabric"
 }

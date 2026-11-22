@@ -1,5 +1,6 @@
 package ru.wardreg.ccpower.fabric;
 
+import dan200.computercraft.api.peripheral.PeripheralLookup;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -37,6 +38,8 @@ public final class ModRegistry {
 
     public static void register() {
         ModRegistryCommon.init(() -> DOCK_BE);
+        // Expose the dock's internal state to adjacent computers as a CC:T peripheral.
+        PeripheralLookup.get().registerForBlockEntity((dock, side) -> dock.getPeripheral(), DOCK_BE);
         EnergyStorage.SIDED.registerForBlockEntity((dock, side) -> new EnergyStorage() {
             public boolean supportsInsertion() { return true; }
             public long insert(long amount, net.fabricmc.fabric.api.transfer.v1.transaction.TransactionContext ctx) {

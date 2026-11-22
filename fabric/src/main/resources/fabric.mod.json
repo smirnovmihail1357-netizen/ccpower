@@ -16,6 +16,9 @@
   "entrypoints": {
     "main": [
       "ru.wardreg.ccpower.fabric.FabricEntry"
+    ],
+    "jade": [
+      "ru.wardreg.ccpower.integration.jade.CCPowerJadePlugin"
     ]
   },
   "mixins": [

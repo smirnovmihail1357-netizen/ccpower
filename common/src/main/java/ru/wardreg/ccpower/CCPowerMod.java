@@ -1,8 +1,12 @@
 package ru.wardreg.ccpower;
 
+import dan200.computercraft.api.ComputerCraftAPI;
 import net.minecraft.server.level.ServerLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.wardreg.ccpower.dock.DockPeripheral;
+import ru.wardreg.ccpower.lua.ComputerStatePeripheral;
+import ru.wardreg.ccpower.lua.PowerAPI;
 import ru.wardreg.ccpower.platform.CcpPlatform;
 import ru.wardreg.ccpower.platform.CcpPlatformHolder;
 import ru.wardreg.ccpower.platform.ConfigProvider;
@@ -23,6 +27,16 @@ public final class CCPowerMod {
         CcpPlatformHolder.init(platform);
         CCPowerConfig.init(config);
         PeripheralCosts.loadConfig();
+
+        // Lua API: register the generic method source once, then let CC:T build
+        // a per-computer `ccpower` API object through its factory.
+        ComputerCraftAPI.registerGenericSource(new PowerAPI());
+        ComputerCraftAPI.registerAPIFactory(system -> new PowerAPI(system.getID()));
+        // The dock is a peripheral; its Lua methods need a generic source too.
+        ComputerCraftAPI.registerGenericSource(new DockPeripheral());
+        // Adds the same state methods to every computer/turtle peripheral.
+        ComputerCraftAPI.registerGenericSource(new ComputerStatePeripheral());
+
         LOG.info("CC: Power initialized");
     }
 

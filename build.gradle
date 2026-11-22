@@ -41,5 +41,6 @@ allprojects {
         maven { url = 'https://maven.fabricmc.net/' }
         maven { url = 'https://maven.architectury.dev/' }
         maven { url = 'https://maven.minecraftforge.net/' }
+        maven { url = 'https://api.modrinth.com/maven' } // optional Jade compile-time API
     }
 }
