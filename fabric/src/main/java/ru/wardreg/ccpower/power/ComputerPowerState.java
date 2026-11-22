@@ -120,6 +120,50 @@ public final class ComputerPowerState {
         return view != null ? view.ccpower$getEnergy() : 0;
     }
 
+    /** RF received during the last server tick (FE neighbours or the dock). */
+    private final AtomicLong lastCharge = new AtomicLong();
+
+    /** RF spent during the last server tick (tick cost + turtle actions). */
+    private final AtomicLong lastDischarge = new AtomicLong();
+
+    /** Record RF pushed into this computer's buffer/battery this tick. */
+    public void recordCharge(long amount) {
+        if (amount > 0) lastCharge.addAndGet(amount);
+    }
+
+    /** Record RF taken out of this computer's buffer/battery this tick. */
+    public void recordDischarge(long amount) {
+        if (amount > 0) lastDischarge.addAndGet(amount);
+    }
+
+    /** RF/tick received on the last completed server tick. */
+    public long chargeRate() {
+        return lastCharge.get();
+    }
+
+    /** RF/tick spent on the last completed server tick. */
+    public long dischargeRate() {
+        return lastDischarge.get();
+    }
+
+    /** Clear the per-tick rate counters before a new accounting tick. */
+    public void resetRates() {
+        lastCharge.set(0);
+        lastDischarge.set(0);
+    }
+
+    /** Energy currently held by this computer (buffer for PCs, battery for turtles). */
+    public long energyStored() {
+        return hasTurtle() ? turtleEnergy() : bufferStored();
+    }
+
+    /** Capacity of the energy store used by this computer. */
+    public long energyCapacity() {
+        return hasTurtle()
+            ? CCPowerConfig.turtleBufferRF()
+            : CCPowerConfig.computerBufferRF();
+    }
+
     /**
      * One-shot flag for the power-on denial log: CC:T retries the pending start
      * every tick, the message must only fire once per denial period.

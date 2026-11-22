@@ -1,12 +1,15 @@
 package ru.wardreg.ccpower.registry;
 
+import dan200.computercraft.api.ForgeComputerCraftAPI;
 import java.util.function.Supplier;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -39,6 +42,14 @@ public final class ModRegistry {
         BLOCKS.register(modBus);
         ITEMS.register(modBus);
         BLOCK_ENTITIES.register(modBus);
+
+        // Expose the dock's internal state to adjacent computers as a CC:T peripheral.
+        ForgeComputerCraftAPI.registerPeripheralProvider((level, pos, side) -> {
+            BlockEntity be = level.getBlockEntity(pos);
+            return be instanceof DockBlockEntity dock
+                ? LazyOptional.of(dock::getPeripheral)
+                : LazyOptional.empty();
+        });
     }
 
     private ModRegistry() {}

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "ccpower",
-  "version": "0.5.1",
+  "version": "0.8.0",
   "name": "CC: Power",
   "description": "Adds RF (Forge Energy) power consumption to CC:Tweaked computers and turtles.",
   "authors": ["wardreg"],

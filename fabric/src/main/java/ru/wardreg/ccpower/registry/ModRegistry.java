@@ -1,5 +1,6 @@
 package ru.wardreg.ccpower.registry;
 
+import dan200.computercraft.api.peripheral.PeripheralLookup;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -23,6 +24,8 @@ public final class ModRegistry {
         Registry.register(BuiltInRegistries.ITEM, id("dock"), DOCK_ITEM);
         Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, id("dock"), DOCK_BE);
         EnergyStorage.SIDED.registerForBlockEntity((dock, side) -> dock.getStorage(), DOCK_BE);
+        // Expose the dock's internal state to adjacent computers as a CC:T peripheral.
+        PeripheralLookup.get().registerForBlockEntity((dock, side) -> dock.getPeripheral(), DOCK_BE);
     }
 
     private static ResourceLocation id(String path) {
