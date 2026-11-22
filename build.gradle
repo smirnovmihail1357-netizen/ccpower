@@ -3,7 +3,7 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.148'
 }
 
-version = '0.5.1'
+version = '0.8.0'
 group = 'ru.wardreg.ccpower'
 
 java {
@@ -44,6 +44,11 @@ repositories {
         url = 'https://maven.squiddev.cc'
         content { includeGroup 'cc.tweaked' }
     }
+    maven {
+        // Optional Jade compile-time API (MC 1.21.6/7/8).
+        url = 'https://api.modrinth.com/maven'
+        content { includeGroup 'maven.modrinth' }
+    }
 }
 
 configurations {
@@ -54,6 +59,8 @@ dependencies {
     // CC:Tweaked (the "forge" classifier build is the NeoForge jar on these versions).
     compileOnly 'cc.tweaked:cc-tweaked-1.21.8-forge:1.116.1'
     cctRuntime 'cc.tweaked:cc-tweaked-1.21.8-forge:1.116.1'
+    // Optional Jade API: the plugin class is only loaded when Jade is installed.
+    compileOnly 'maven.modrinth:jade:19.3.1+neoforge'
 }
 
 // Keep the colon-free compile classpath workaround from the reference build.

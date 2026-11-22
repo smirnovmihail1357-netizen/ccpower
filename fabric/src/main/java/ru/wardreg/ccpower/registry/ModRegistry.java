@@ -1,5 +1,6 @@
 package ru.wardreg.ccpower.registry;
 
+import dan200.computercraft.api.peripheral.PeripheralLookup;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
@@ -50,6 +51,10 @@ public final class ModRegistry {
         // External cables can push FE into the dock through this storage.
         EnergyStorage.SIDED.registerForBlockEntity(
             (entity, side) -> entity.getStorage(), DOCK_BE);
+
+        // Expose the dock's internal state to adjacent computers as a CC:T peripheral.
+        PeripheralLookup.get().registerForBlockEntity(
+            (entity, side) -> entity.getPeripheral(), DOCK_BE);
     }
 
     private ModRegistry() {}
