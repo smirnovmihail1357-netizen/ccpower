@@ -1,15 +1,21 @@
 package ru.wardreg.ccpower;
 
+import dan200.computercraft.api.ComputerCraftAPI;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.wardreg.ccpower.debug.CCPowerCommands;
+import ru.wardreg.ccpower.dock.DockPeripheral;
+import ru.wardreg.ccpower.lua.ComputerStatePeripheral;
+import ru.wardreg.ccpower.lua.PowerAPI;
 import ru.wardreg.ccpower.power.PeripheralCosts;
 import ru.wardreg.ccpower.registry.ModRegistry;
 
@@ -40,6 +46,15 @@ public final class CCPowerMod {
     public CCPowerMod(IEventBus modBus, ModContainer container) {
         ModRegistry.register(modBus);
 
+        // Lua API: register the generic method source once, then let CC:T build
+        // a per-computer `ccpower` API object through its factory.
+        ComputerCraftAPI.registerGenericSource(new PowerAPI());
+        ComputerCraftAPI.registerAPIFactory(system -> new PowerAPI(system.getID()));
+        // The dock is a peripheral; its Lua methods need a generic source too.
+        ComputerCraftAPI.registerGenericSource(new DockPeripheral());
+        // Adds the same state methods to every computer/turtle peripheral.
+        ComputerCraftAPI.registerGenericSource(new ComputerStatePeripheral());
+
         // Common config: watched by NeoForge and reloaded dynamically on file change.
         container.registerConfig(ModConfig.Type.COMMON, CCPowerConfig.SPEC);
         modBus.addListener(CCPowerConfig::onConfigReloading);
@@ -53,6 +68,9 @@ public final class CCPowerMod {
         NeoForge.EVENT_BUS.addListener((ServerStartedEvent event) ->
             PeripheralCosts.load(event.getServer().overworld()));
         NeoForge.EVENT_BUS.addListener((ServerTickEvent.Post event) -> PeripheralCosts.watchServerTick());
+
+        // Admin-only debug toggle for the optional Jade diagnostic line.
+        NeoForge.EVENT_BUS.addListener((RegisterCommandsEvent event) -> CCPowerCommands.register(event));
 
         CCPowerMod.LOG.info("CC: Power initialized");
     }

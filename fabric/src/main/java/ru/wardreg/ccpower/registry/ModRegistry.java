@@ -1,5 +1,6 @@
 package ru.wardreg.ccpower.registry;
 
+import dan200.computercraft.api.peripheral.PeripheralLookup;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.core.Registry;
@@ -46,6 +47,10 @@ public final class ModRegistry {
         // Fabric cables can push energy into it.
         EnergyStorage.SIDED.registerForBlockEntity(
             (dock, side) -> dock.getStorage(), DOCK_BE);
+
+        // Expose the dock's internal state to adjacent computers as a CC:T peripheral.
+        PeripheralLookup.get().registerForBlockEntity(
+            (dock, side) -> dock.getPeripheral(), DOCK_BE);
     }
 
     private static ResourceLocation id(String path) {
