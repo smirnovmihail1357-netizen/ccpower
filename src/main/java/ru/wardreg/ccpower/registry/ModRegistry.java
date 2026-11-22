@@ -1,5 +1,6 @@
 package ru.wardreg.ccpower.registry;
 
+import dan200.computercraft.api.ComputerCraftAPI;
 import java.util.function.Supplier;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
@@ -13,6 +14,9 @@ import net.minecraftforge.registries.RegistryObject;
 import ru.wardreg.ccpower.CCPowerMod;
 import ru.wardreg.ccpower.dock.DockBlock;
 import ru.wardreg.ccpower.dock.DockBlockEntity;
+import ru.wardreg.ccpower.dock.DockPeripheral;
+import ru.wardreg.ccpower.lua.ComputerStatePeripheral;
+import ru.wardreg.ccpower.lua.PowerAPI;
 
 /**
  * Mod content registration: the Recharge Dock block, its item, block entity
@@ -49,6 +53,18 @@ public final class ModRegistry {
         BLOCKS.register(modBus);
         ITEMS.register(modBus);
         BLOCK_ENTITIES.register(modBus);
+    }
+
+    /**
+     * CC:T integration: generic Lua method sources plus the per-computer
+     * {@code ccpower} API factory. The dock itself is exposed through
+     * {@code Capabilities.CAPABILITY_PERIPHERAL} in {@link DockBlockEntity}.
+     */
+    public static void registerComputerCraft() {
+        ComputerCraftAPI.registerGenericSource(new PowerAPI());
+        ComputerCraftAPI.registerAPIFactory(system -> new PowerAPI(system.getID()));
+        ComputerCraftAPI.registerGenericSource(new DockPeripheral());
+        ComputerCraftAPI.registerGenericSource(new ComputerStatePeripheral());
     }
 
     private ModRegistry() {}
