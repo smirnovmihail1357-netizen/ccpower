@@ -1,5 +1,6 @@
 package ru.wardreg.ccpower.registry;
 
+import dan200.computercraft.api.peripheral.PeripheralLookup;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -36,6 +37,9 @@ public final class ModRegistry {
     public static void register() {
         EnergyStorage.SIDED.registerForBlockEntity(
             (dock, side) -> dock.getStorage(), DOCK_BE);
+        // Expose the dock's internal state to adjacent computers as a CC:T peripheral.
+        PeripheralLookup.get().registerForBlockEntity(
+            (dock, side) -> dock.getPeripheral(), DOCK_BE);
     }
 
     private static ResourceLocation id(String path) {

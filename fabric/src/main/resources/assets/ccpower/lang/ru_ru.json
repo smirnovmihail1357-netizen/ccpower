@@ -1,7 +1,5 @@
 {
   "itemGroup.ccpower": "CC: Энергия",
   "block.ccpower.dock": "Дроностанция",
-  "tooltip.ccpower.buffer": "РФ-буфер: %s / %s",
-  "tooltip.ccpower.turtle": "РФ-батарея: %s / %s",
-  "tooltip.ccpower.denied": "Выключен: нет РФ-энергии"
+  "tooltip.ccpower.debug": "РФ/тик: +%s в / -%s из (%s / %s РФ)"
 }
