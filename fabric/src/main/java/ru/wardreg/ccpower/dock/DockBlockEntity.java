@@ -27,6 +27,15 @@ public class DockBlockEntity extends BlockEntity {
 
     private long buffer;
 
+    /** RF pulled from neighbours on the last server tick. */
+    private long lastPull;
+
+    /** RF transferred into a turtle on the last server tick. */
+    private long lastCharge;
+
+    /** Cached CC:T peripheral exposing the dock's state to Lua. */
+    private final DockPeripheral peripheral = new DockPeripheral(this);
+
     private final EnergyStorage storage = new DockEnergyStorage();
 
     /** Transaction-aware view of the dock buffer. */
@@ -100,7 +109,24 @@ public class DockBlockEntity extends BlockEntity {
         return CCPowerConfig.dockBufferRF();
     }
 
+    /** @return RF/t pulled from FE neighbours on the last completed tick. */
+    public long getPullRate() {
+        return lastPull;
+    }
+
+    /** @return RF/t transferred into a turtle on the last completed tick. */
+    public long getChargeRate() {
+        return lastCharge;
+    }
+
+    /** @return the CC:T peripheral exposing this dock's internal state. */
+    public DockPeripheral getPeripheral() {
+        return peripheral;
+    }
+
     public static void serverTick(Level level, BlockPos pos, BlockState state, DockBlockEntity dock) {
+        dock.lastPull = 0;
+        dock.lastCharge = 0;
         dock.tickPull(level, pos);
         dock.tickChargeTurtle(level, pos);
     }
@@ -121,6 +147,7 @@ public class DockBlockEntity extends BlockEntity {
                 if (got > 0) {
                     tx.commit();
                     buffer += got;
+                    lastPull += got;
                     remaining -= got;
                     changed = true;
                 }
@@ -142,6 +169,7 @@ public class DockBlockEntity extends BlockEntity {
         long accepted = turtle.ccpower$receiveEnergy(transfer);
         if (accepted > 0) {
             buffer -= accepted;
+            lastCharge += accepted;
             setChanged();
         }
     }

@@ -1,5 +1,6 @@
 package ru.wardreg.ccpower.registry;
 
+import dan200.computercraft.api.peripheral.PeripheralCapability;
 import java.util.Set;
 import java.util.function.Supplier;
 import net.minecraft.core.registries.Registries;
@@ -63,6 +64,9 @@ public final class ModRegistry {
     public static void registerCapabilities(RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(Capabilities.Energy.BLOCK, DOCK_BE.get(),
             (dock, side) -> dock.getStorage());
+        // Expose the dock's internal state to adjacent computers as a CC:T peripheral.
+        event.registerBlockEntity(PeripheralCapability.get(), DOCK_BE.get(),
+            (dock, side) -> dock.getPeripheral());
     }
 
     private ModRegistry() {}
