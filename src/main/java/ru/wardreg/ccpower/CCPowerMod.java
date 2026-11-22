@@ -1,6 +1,11 @@
 package ru.wardreg.ccpower;
 
+import dan200.computercraft.api.ComputerCraftAPI;
+import dan200.computercraft.api.ForgeComputerCraftAPI;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -11,6 +16,11 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.ModLoadingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.wardreg.ccpower.debug.CCPowerCommands;
+import ru.wardreg.ccpower.dock.DockBlockEntity;
+import ru.wardreg.ccpower.dock.DockPeripheral;
+import ru.wardreg.ccpower.lua.ComputerStatePeripheral;
+import ru.wardreg.ccpower.lua.PowerAPI;
 import ru.wardreg.ccpower.power.PeripheralCosts;
 import ru.wardreg.ccpower.registry.ModRegistry;
 
@@ -24,6 +34,25 @@ public final class CCPowerMod {
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         ModRegistry.register(modBus);
 
+        // Lua API: register the generic method source once, then let CC:T build
+        // a per-computer `ccpower` API object through its factory.
+        ComputerCraftAPI.registerGenericSource(new PowerAPI());
+        ComputerCraftAPI.registerAPIFactory(system -> new PowerAPI(system.getID()));
+        // The dock is a peripheral; its Lua methods need a generic source too.
+        ComputerCraftAPI.registerGenericSource(new DockPeripheral());
+        // Adds the same state methods to every computer/turtle peripheral.
+        ComputerCraftAPI.registerGenericSource(new ComputerStatePeripheral());
+
+        // Forge 1.19.3 has no PeripheralCapability: expose the dock through the
+        // public IPeripheralProvider registration point instead.
+        ForgeComputerCraftAPI.registerPeripheralProvider((level, pos, side) -> {
+            BlockEntity be = level.getBlockEntity(pos);
+            if (be instanceof DockBlockEntity dock) {
+                return LazyOptional.of(() -> dock.getPeripheral());
+            }
+            return LazyOptional.empty();
+        });
+
         // Common config: watched by Forge and reloaded dynamically on file change.
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, CCPowerConfig.SPEC);
         modBus.addListener(CCPowerConfig::onConfigReloading);
@@ -35,6 +64,9 @@ public final class CCPowerMod {
         MinecraftForge.EVENT_BUS.addListener((TickEvent.ServerTickEvent event) -> {
             if (event.phase == TickEvent.Phase.END) PeripheralCosts.watchServerTick();
         });
+
+        // Admin-only debug toggle for the optional diagnostic line.
+        MinecraftForge.EVENT_BUS.addListener(CCPowerCommands::register);
 
         CCPowerMod.LOG.info("CC: Power initialized");
     }
