@@ -6,6 +6,19 @@ Minecraft 1.15.2 – 26.3 · Forge / NeoForge / Fabric · requires CC: Tweaked
 
 [English](README.md) · [Русский](README.ru.md)
 
+## Documentation
+
+**[API reference and Lua guide](docs/API.md)** — every internal function of the
+mod and what it does:
+
+- `ccpower` API on every computer and turtle: `getEnergy()`, `getCapacity()`,
+  `getChargeRate()`, `getDischargeRate()`.
+- The same state methods on any `computer` / `turtle` peripheral — read another
+  computer's RF from Lua or through a wired modem.
+- `ccpower_dock` peripheral — buffer, capacity and both RF/t rates of the
+  Recharge Dock.
+- `/ccpower debug` (admin only) — optional Jade line with charge/discharge rates.
+
 ## Supported versions
 
 | Minecraft | Loaders |
