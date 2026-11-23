@@ -88,9 +88,10 @@ Mekanism, Create: Power Grid и множество других техничес
 
 ## Jade
 
-Полоса энергии Jade из 0.8.0 не портирована на Fabric — интеграции с Jade в
-этой сборке нет. Команда администратора `/ccpower debug` доступна, но не даёт
-видимого эффекта без интеграции с подсказками.
+Полоса энергии Jade из 0.8.0 не портирована ни в один из портов на 1.20.4 —
+интеграции с Jade нет ни в модуле Fabric, ни в модуле NeoForge. Команда
+администратора `/ccpower debug` доступна, но не даёт видимого эффекта без
+интеграции с подсказками.
 
 ## Lua API
 
@@ -121,13 +122,16 @@ dock.getChargeRate()   -- РФ/тик, отданные черепахе
 Стандартные периферии `computer` / `turtle` тоже предоставляют методы
 `getEnergy`, `getCapacity`, `getChargeRate` и `getDischargeRate`.
 
-## Сборка (Fabric, MC 1.20.4)
+## Сборка (MC 1.20.4)
+
+Fabric и NeoForge — отдельные самостоятельные Gradle-модули:
 
 ```
-cd fabric && ./gradlew build
+cd fabric && ./gradlew build      # -> fabric/build/libs/
+cd neoforge && ./gradlew build    # -> neoforge/build/libs/
 ```
 
-Java 17 или новее. Джарка появится в `fabric/build/libs/`.
+Java 17 или новее.
 
 ## Лицензия
 

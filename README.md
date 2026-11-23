@@ -84,9 +84,10 @@ to `0.0` to disable it.
 
 ## Jade
 
-The Jade energy bar from 0.8.0 is not part of this Fabric port (there is no
-Jade integration here). The admin-only `/ccpower debug` command is available,
-but has no visible effect without a tooltip integration.
+The Jade energy bar from 0.8.0 is not part of either 1.20.4 port (there is no
+Jade integration in the Fabric or NeoForge module). The admin-only
+`/ccpower debug` command is available, but has no visible effect without a
+tooltip integration.
 
 ## Lua API
 
@@ -119,13 +120,16 @@ Computers and turtles also expose `getEnergy`, `getCapacity`,
 `getChargeRate` and `getDischargeRate` on their standard `computer` / `turtle`
 peripherals, so another computer can inspect them.
 
-## Building (Fabric, MC 1.20.4)
+## Building (MC 1.20.4)
+
+Fabric and NeoForge are separate standalone Gradle modules:
 
 ```
-cd fabric && ./gradlew build
+cd fabric && ./gradlew build      # -> fabric/build/libs/
+cd neoforge && ./gradlew build    # -> neoforge/build/libs/
 ```
 
-Java 17 or newer. The jar lands in `fabric/build/libs/`.
+Java 17 or newer.
 
 ## License
 

@@ -1,5 +1,6 @@
 package ru.wardreg.ccpower;
 
+import dan200.computercraft.api.ComputerCraftAPI;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.config.ModConfig;
@@ -10,6 +11,10 @@ import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.TickEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.wardreg.ccpower.debug.CCPowerCommands;
+import ru.wardreg.ccpower.dock.DockPeripheral;
+import ru.wardreg.ccpower.lua.ComputerStatePeripheral;
+import ru.wardreg.ccpower.lua.PowerAPI;
 import ru.wardreg.ccpower.power.PeripheralCosts;
 import ru.wardreg.ccpower.registry.ModRegistry;
 
@@ -40,6 +45,15 @@ public final class CCPowerMod {
     public CCPowerMod(IEventBus modBus) {
         ModRegistry.register(modBus);
 
+        // Lua API: register the generic method source once, then let CC:T build
+        // a per-computer `ccpower` API object through its factory.
+        ComputerCraftAPI.registerGenericSource(new PowerAPI());
+        ComputerCraftAPI.registerAPIFactory(system -> new PowerAPI(system.getID()));
+        // The dock is a peripheral; its Lua methods need a generic source too.
+        ComputerCraftAPI.registerGenericSource(new DockPeripheral());
+        // Adds the same state methods to every computer/turtle peripheral.
+        ComputerCraftAPI.registerGenericSource(new ComputerStatePeripheral());
+
         // Common config: watched by NeoForge and reloaded dynamically on file change.
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, CCPowerConfig.SPEC);
         modBus.addListener(CCPowerConfig::onConfigReloading);
@@ -55,6 +69,9 @@ public final class CCPowerMod {
         NeoForge.EVENT_BUS.addListener((TickEvent.ServerTickEvent event) -> {
             if (event.phase == TickEvent.Phase.END) PeripheralCosts.watchServerTick();
         });
+
+        // Admin-only /ccpower debug toggle (diagnostic line, no Jade in this port).
+        NeoForge.EVENT_BUS.addListener(CCPowerCommands::register);
 
         CCPowerMod.LOG.info("CC: Power initialized");
     }
