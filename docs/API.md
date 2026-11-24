@@ -94,7 +94,33 @@ print(("Dock: %d/%d RF  +%d/t in  -%d/t out"):format(stored, cap, pulled, given)
 
 ---
 
-## 4. Jade tooltip and the admin debug command
+## 4. Pocket computers and Smart Glasses
+
+All pocket computers (`pocket_computer*`) and Smart Glasses from
+**Advanced Peripherals** are now real energy consumers. Advanced Peripherals is
+optional: when it is not installed, nothing Smart-Glasses-specific is loaded
+and there is no error. Both devices have their **own internal RF buffer**, which
+starts full and is **not refilled** — once it runs out the computer shuts down.
+`ccpower.getEnergy()` on such a device reports this buffer.
+
+Portable peripheral costs are configurable separately for each device:
+
+| Key (`power.pocket.*` / `power.smartGlasses.*`) | Default (pocket / glasses) | Meaning |
+|---|---|---|
+| `mode` | `MULTIPLIER` / `MULTIPLIER` | `MULTIPLIER` or `FIXED` — mutually exclusive; one enum, not two flags. |
+| `multiplier` | `1.0` / `0.75` | Factor applied to the normal computer's cost formula in MULTIPLIER mode. |
+| `fixedRFPerTick` | `2.0` / `2.0` | Exact RF/t in FIXED mode (peripherals and surcharges are ignored). |
+| `bufferRF` | `2000` / `2000` | Capacity of the internal buffer. |
+| `peripheralRFPerTick` | `1.0` / `1.0` | Flat tick cost per attached peripheral (when not using computer prices). |
+| `peripheralCallRF` | `5.0` / `5.0` | Flat RF per peripheral call (when not using computer prices). |
+| `useComputerPeripheralCosts` | `true` / `true` | `true` — use the normal computer's per-type prices from `ccpower-peripherals.toml`; `false` — use the flat values above. |
+
+The multipliers are independent, so pocket computers and Smart Glasses can be
+tuned separately. In `FIXED` mode the number is the whole per-tick cost.
+
+---
+
+## 5. Jade tooltip and the admin debug command
 
 With [Jade](https://modrinth.com/mod/jade) installed, pointing at a computer,
 turtle or Recharge Dock shows its RF store as the standard Jade energy bar with
@@ -114,7 +140,7 @@ targeted computer. Run it again to turn the line off.
 
 ---
 
-## 5. Configuration keys affecting these values
+## 6. Configuration keys affecting these values
 
 From `config/ccpower-common.toml` (hot-reloaded):
 
@@ -167,7 +193,32 @@ From `config/ccpower-common.toml` (hot-reloaded):
 | `getPullRate()` | число | РФ/тик, подтянутые от соседей. |
 | `getChargeRate()` | число | РФ/тик, отданные черепахе. |
 
-### 4. Jade и команда `/ccpower debug`
+### 4. Карманные компьютеры и Smart Glasses
+
+Все `pocket_computer*` и Smart Glasses из мода **Advanced Peripherals** теперь
+потребляют энергию. Advanced Peripherals необязателен: если его нет, мод не
+загружает ничего связанного с очками и не выдаёт ошибок.
+
+Оба типа устройств имеют **свой внутренний РФ-буфер**, который заполняется
+полным при первом использовании и **не восполняется** — когда он иссякнет,
+компьютер выключится. `ccpower.getEnergy()` у такого устройства показывает
+этот буфер.
+
+Настройки потребления периферии раздельны для каждого устройства:
+
+| Ключ (`power.pocket.*` / `power.smartGlasses.*`) | Дефолт (карманный / очки) | Значение |
+|---|---|---|
+| `mode` | `MULTIPLIER` / `MULTIPLIER` | `MULTIPLIER` или `FIXED` — взаимоисключающие режимы (один enum). |
+| `multiplier` | `1.0` / `0.75` | Множитель стоимости обычного компьютера в режиме MULTIPLIER. |
+| `fixedRFPerTick` | `2.0` / `2.0` | Точное РФ/тик в режиме FIXED (периферия и надбавки игнорируются). |
+| `bufferRF` | `2000` / `2000` | Ёмкость внутреннего буфера. |
+| `peripheralRFPerTick` | `1.0` / `1.0` | Плоская цена за подключённую периферию за тик. |
+| `peripheralCallRF` | `5.0` / `5.0` | Плоская цена за вызов периферии. |
+| `useComputerPeripheralCosts` | `true` / `true` | `true` — цены компьютера из `ccpower-peripherals.toml`; `false` — свои плоские значения выше. |
+
+Множители независимы, устройства настраиваются отдельно.
+
+### 5. Jade и команда `/ccpower debug`
 
 При установленном Jade наведение на компьютер, черепаху или дроностанцию
 показывает стандартную шкалу энергии с числовой подписью. Полосу и числа

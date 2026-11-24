@@ -57,6 +57,16 @@ and many other tech mods) and stop working when the energy runs out.
   its buffer holds at least `idle + active` RF.
 - A powered-off computer still refills its buffer but consumes nothing.
 
+### Pocket computers and Smart Glasses
+
+All `pocket_computer*` and Smart Glasses (Advanced Peripherals, optional) now
+consume RF from their own internal buffer. It starts full and is never
+refilled. Each device has independent `power.pocket.*` /
+`power.smartGlasses.*` settings: a mutually exclusive `mode` (`MULTIPLIER`,
+with independent multipliers of `1.0` / `0.75`, or `FIXED` with an exact RF/t),
+its own buffer, and its own peripheral tick/call costs with a flag to reuse
+the computer's per-type prices. See [docs/API.md](docs/API.md).
+
 ### Turtles
 
 - A turtle is a computer that moves, so it runs on the **same code path** as

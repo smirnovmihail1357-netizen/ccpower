@@ -2,6 +2,7 @@ package ru.wardreg.ccpower;
 
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.ModConfigSpec;
+import ru.wardreg.ccpower.power.CostMode;
 
 /**
  * All energy costs of the mod, in RF (Forge Energy) per game tick.
@@ -82,6 +83,70 @@ public final class CCPowerConfig {
             "the turtle standing on top of it.")
         .defineInRange("dock.chargeRFPerTick", 250L, 0L, Long.MAX_VALUE);
 
+    // --- Portable devices: pocket computers and Smart Glasses ---------------
+    // Each device has its own cost mode, multiplier/fixed value, buffer and
+    // peripheral prices. MULTIPLIER and FIXED are exclusive via one enum.
+
+    private static final ModConfigSpec.EnumValue<CostMode> POCKET_MODE = BUILDER
+        .comment("Pocket computers: MULTIPLIER derives the cost from a normal computer,",
+            "FIXED uses pocket.fixedRFPerTick instead. Mutually exclusive.")
+        .defineEnum("power.pocket.mode", CostMode.MULTIPLIER);
+
+    private static final ModConfigSpec.DoubleValue POCKET_MULTIPLIER = BUILDER
+        .comment("Pocket computer cost multiplier (1.0 = same as a normal computer).")
+        .defineInRange("power.pocket.multiplier", 1.0, 0.0, Double.MAX_VALUE);
+
+    private static final ModConfigSpec.DoubleValue POCKET_FIXED = BUILDER
+        .comment("Pocket computer RF/tick when mode = FIXED.")
+        .defineInRange("power.pocket.fixedRFPerTick", 2.0, 0.0, Double.MAX_VALUE);
+
+    private static final ModConfigSpec.LongValue POCKET_BUFFER = BUILDER
+        .comment("Internal RF buffer of a pocket computer. It starts full and is not refilled.")
+        .defineInRange("power.pocket.bufferRF", 2_000L, 0L, Long.MAX_VALUE);
+
+    private static final ModConfigSpec.DoubleValue POCKET_PERIPHERAL_TICK = BUILDER
+        .comment("Pocket computer: RF/tick per attached peripheral when not using computer prices.")
+        .defineInRange("power.pocket.peripheralRFPerTick", 1.0, 0.0, Double.MAX_VALUE);
+
+    private static final ModConfigSpec.DoubleValue POCKET_PERIPHERAL_CALL = BUILDER
+        .comment("Pocket computer: RF per peripheral method call when not using computer prices.")
+        .defineInRange("power.pocket.peripheralCallRF", 5.0, 0.0, Double.MAX_VALUE);
+
+    private static final ModConfigSpec.BooleanValue POCKET_USE_COMPUTER_PERIPHERALS = BUILDER
+        .comment("true: use the peripheral prices configured for normal computers",
+            "(ccpower-peripherals.toml). false: use power.pocket.peripheral* below.")
+        .define("power.pocket.useComputerPeripheralCosts", true);
+
+    private static final ModConfigSpec.EnumValue<CostMode> GLASSES_MODE = BUILDER
+        .comment("Smart Glasses: MULTIPLIER derives the cost from a normal computer,",
+            "FIXED uses smartGlasses.fixedRFPerTick instead. Mutually exclusive.")
+        .defineEnum("power.smartGlasses.mode", CostMode.MULTIPLIER);
+
+    private static final ModConfigSpec.DoubleValue GLASSES_MULTIPLIER = BUILDER
+        .comment("Smart Glasses cost multiplier (1.0 = same as a normal computer).")
+        .defineInRange("power.smartGlasses.multiplier", 0.75, 0.0, Double.MAX_VALUE);
+
+    private static final ModConfigSpec.DoubleValue GLASSES_FIXED = BUILDER
+        .comment("Smart Glasses RF/tick when mode = FIXED.")
+        .defineInRange("power.smartGlasses.fixedRFPerTick", 2.0, 0.0, Double.MAX_VALUE);
+
+    private static final ModConfigSpec.LongValue GLASSES_BUFFER = BUILDER
+        .comment("Internal RF buffer of Smart Glasses. Starts full, not refilled.")
+        .defineInRange("power.smartGlasses.bufferRF", 2_000L, 0L, Long.MAX_VALUE);
+
+    private static final ModConfigSpec.DoubleValue GLASSES_PERIPHERAL_TICK = BUILDER
+        .comment("Smart Glasses: RF/tick per attached peripheral when not using computer prices.")
+        .defineInRange("power.smartGlasses.peripheralRFPerTick", 1.0, 0.0, Double.MAX_VALUE);
+
+    private static final ModConfigSpec.DoubleValue GLASSES_PERIPHERAL_CALL = BUILDER
+        .comment("Smart Glasses: RF per peripheral call when not using computer prices.")
+        .defineInRange("power.smartGlasses.peripheralCallRF", 5.0, 0.0, Double.MAX_VALUE);
+
+    private static final ModConfigSpec.BooleanValue GLASSES_USE_COMPUTER_PERIPHERALS = BUILDER
+        .comment("true: use the peripheral prices configured for normal computers",
+            "(ccpower-peripherals.toml). false: use power.smartGlasses.peripheral* below.")
+        .define("power.smartGlasses.useComputerPeripheralCosts", true);
+
     private static final ModConfigSpec.BooleanValue LOGS = BUILDER
         .comment("Enable CC: Power log messages.")
         .define("logging.enabled", true);
@@ -149,6 +214,23 @@ public final class CCPowerConfig {
     public static long dockChargeRFPerTick() {
         return DOCK_CHARGE.get();
     }
+
+    // Portable devices
+    public static CostMode pocketMode() { return POCKET_MODE.get(); }
+    public static double pocketMultiplier() { return POCKET_MULTIPLIER.get(); }
+    public static double pocketFixedRFPerTick() { return POCKET_FIXED.get(); }
+    public static long pocketBufferRF() { return POCKET_BUFFER.get(); }
+    public static double pocketPeripheralRFPerTick() { return POCKET_PERIPHERAL_TICK.get(); }
+    public static double pocketPeripheralCallRF() { return POCKET_PERIPHERAL_CALL.get(); }
+    public static boolean pocketUseComputerPeripherals() { return POCKET_USE_COMPUTER_PERIPHERALS.get(); }
+
+    public static CostMode glassesMode() { return GLASSES_MODE.get(); }
+    public static double glassesMultiplier() { return GLASSES_MULTIPLIER.get(); }
+    public static double glassesFixedRFPerTick() { return GLASSES_FIXED.get(); }
+    public static long glassesBufferRF() { return GLASSES_BUFFER.get(); }
+    public static double glassesPeripheralRFPerTick() { return GLASSES_PERIPHERAL_TICK.get(); }
+    public static double glassesPeripheralCallRF() { return GLASSES_PERIPHERAL_CALL.get(); }
+    public static boolean glassesUseComputerPeripherals() { return GLASSES_USE_COMPUTER_PERIPHERALS.get(); }
 
     public static boolean loggingEnabled() {
         return LOGS.get();

@@ -119,6 +119,52 @@ public final class ComputerPowerState {
         return view != null ? view.ccpower$getEnergy() : 0;
     }
 
+    /** Device kind this state belongs to; assigned on the first accounting tick. */
+    private volatile DeviceKind kind = DeviceKind.STATIONARY;
+
+    public void setKind(DeviceKind newKind) {
+        this.kind = newKind;
+    }
+
+    public DeviceKind kind() {
+        return kind;
+    }
+
+    /**
+     * Internal RF buffer of a portable device. Starts full; portable devices
+     * have no way to recharge and spend it until the computer shuts down.
+     */
+    private final AtomicLong portableBuffer = new AtomicLong(-1);
+
+    /** Lazily fill the portable buffer from config the first time it is used. */
+    private long portableBufferValue() {
+        long value = portableBuffer.get();
+        if (value < 0) {
+            long capacity = PortableCosts.capacity(kind);
+            if (portableBuffer.compareAndSet(-1, capacity)) return capacity;
+            value = portableBuffer.get();
+        }
+        return value;
+    }
+
+    public long portableStored() {
+        return portableBufferValue();
+    }
+
+    public long portableRoom() {
+        return Math.max(0, PortableCosts.capacity(kind) - portableBufferValue());
+    }
+
+    public boolean consumePortable(long amount) {
+        if (amount <= 0) return true;
+        long current = portableBufferValue();
+        while (current >= amount) {
+            if (portableBuffer.compareAndSet(current, current - amount)) return true;
+            current = portableBuffer.get();
+        }
+        return false;
+    }
+
     /** RF received during the last server tick (FE neighbours or the dock). */
     private final AtomicLong lastCharge = new AtomicLong();
 
@@ -151,16 +197,18 @@ public final class ComputerPowerState {
         lastDischarge.set(0);
     }
 
-    /** Energy currently held by this computer (buffer for PCs, battery for turtles). */
+    /** Energy currently held by this computer (buffer, battery or portable store). */
     public long energyStored() {
-        return hasTurtle() ? turtleEnergy() : bufferStored();
+        if (hasTurtle()) return turtleEnergy();
+        if (kind.isPortable()) return portableStored();
+        return bufferStored();
     }
 
     /** Capacity of the energy store used by this computer. */
     public long energyCapacity() {
-        return hasTurtle()
-            ? CCPowerConfig.turtleBufferRF()
-            : CCPowerConfig.computerBufferRF();
+        if (hasTurtle()) return CCPowerConfig.turtleBufferRF();
+        if (kind.isPortable()) return PortableCosts.capacity(kind);
+        return CCPowerConfig.computerBufferRF();
     }
 
     /**

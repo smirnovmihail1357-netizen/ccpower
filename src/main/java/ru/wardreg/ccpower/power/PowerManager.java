@@ -46,7 +46,11 @@ public final class PowerManager {
 
     /** Called from the PeripheralWrapper mixin on every peripheral method call. */
     public static void chargePeripheralCall(int id, String type) {
-        state(id).addSurcharge(PeripheralCosts.callCost(type));
+        ComputerPowerState st = state(id);
+        double cost = st.kind().isPortable()
+            ? PortableCosts.callCost(st.kind(), type)
+            : PeripheralCosts.callCost(type);
+        st.addSurcharge(cost);
     }
 
     /**
@@ -84,10 +88,14 @@ public final class PowerManager {
         // recharge can locate the computer's neighbours.
         st.updatePosition(computer.getLevel(), computer.getPosition());
 
-        boolean stationary = !st.hasTurtle();
+        DeviceKind kind = DeviceKind.of(computer);
+        st.setKind(kind);
+        boolean turtle = st.hasTurtle();
+        boolean portable = !turtle && kind.isPortable();
+        boolean stationary = !turtle && !portable;
 
         if (!computer.isOn()) {
-            // A turned-off computer consumes nothing, but still recharges.
+            // A turned-off computer consumes nothing, but a stationary one still recharges.
             st.resetTick();
             if (stationary) refillBuffer(computer, st);
             return;
@@ -97,24 +105,36 @@ public final class PowerManager {
         if (stationary) refillBuffer(computer, st);
 
         boolean assumeActive = st.takeActive();
-        double peripheralCost = 0.0;
-        for (String type : st.peripheralTypes()) {
-            peripheralCost += PeripheralCosts.tickCost(type);
+        double surcharge = st.drainSurcharge();
+        double cost;
+        if (portable) {
+            cost = PortableCosts.tickCost(kind, st, assumeActive, surcharge);
+        } else {
+            double peripheralCost = 0.0;
+            for (String type : st.peripheralTypes()) {
+                peripheralCost += PeripheralCosts.tickCost(type);
+            }
+            cost = CCPowerConfig.idleRFPerTick()
+                + (assumeActive ? CCPowerConfig.activeRFPerTick() : 0.0)
+                + peripheralCost
+                + surcharge;
         }
-        double cost = CCPowerConfig.idleRFPerTick()
-            + (assumeActive ? CCPowerConfig.activeRFPerTick() : 0.0)
-            + peripheralCost
-            + st.drainSurcharge();
         long need = (long) Math.ceil(cost);
 
-        boolean paid = stationary ? st.consumeBuffer(need) : st.consumeTurtle(need);
+        boolean paid;
+        if (turtle) paid = st.consumeTurtle(need);
+        else if (portable) paid = st.consumePortable(need);
+        else paid = st.consumeBuffer(need);
         if (paid) st.recordDischarge(need);
 
         if (!paid) {
             // Fully discharged: shut the computer down. The running program is
             // lost exactly as with a normal CC shutdown - no automatic resume,
             // turning the machine back on is up to the player.
-            logDischarged(id, need, stationary ? st.bufferStored() : st.turtleEnergy());
+            long available = turtle ? st.turtleEnergy()
+                : portable ? st.portableStored()
+                : st.bufferStored();
+            logDischarged(id, need, available);
             computer.shutdown();
             st.resetTick();
         }
@@ -137,7 +157,14 @@ public final class PowerManager {
             if (allowed) st.clearPowerDeniedLog();
             return allowed;
         }
-        // Pocket computers have no position and no way to recharge: grace.
+        if (st.kind().isPortable()) {
+            long portableNeed = (long) Math.ceil(
+                PortableCosts.tickCost(st.kind(), st, true, 0.0));
+            boolean allowed = st.portableStored() >= portableNeed;
+            if (allowed) st.clearPowerDeniedLog();
+            return allowed;
+        }
+        // Devices without a resolved position and no way to recharge: grace.
         if (st.level() == null || st.position() == null) return true;
         boolean allowed = st.bufferStored() >= need;
         if (allowed) st.clearPowerDeniedLog();
