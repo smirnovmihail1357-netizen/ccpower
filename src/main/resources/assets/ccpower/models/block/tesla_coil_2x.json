@@ -67,7 +67,8 @@
             3.5,
             6.8817
           ],
-          "texture": "#0"
+          "texture": "#0",
+          "cullface": "down"
         }
       }
     },

@@ -47,14 +47,17 @@ public final class ModRegistry {
 
     public static final DeferredBlock<TeslaCoilBlock> TESLA_SMALL = BLOCKS.register("tesla_coil_1x",
         () -> new TeslaCoilBlock(BlockBehaviour.Properties.of()
-            .strength(3.0f, 6.0f).requiresCorrectToolForDrops(), false));
+            .strength(3.0f, 6.0f).requiresCorrectToolForDrops()
+            // Non-full model: keep neighbours from culling their faces against it.
+            .noOcclusion(), false));
 
     public static final DeferredItem<BlockItem> TESLA_SMALL_ITEM =
         ITEMS.registerSimpleBlockItem("tesla_coil_1x", TESLA_SMALL);
 
     public static final DeferredBlock<TeslaCoilBlock> TESLA_LARGE = BLOCKS.register("tesla_coil_2x",
         () -> new TeslaCoilBlock(BlockBehaviour.Properties.of()
-            .strength(3.0f, 6.0f).requiresCorrectToolForDrops(), true));
+            .strength(3.0f, 6.0f).requiresCorrectToolForDrops()
+            .noOcclusion(), true));
 
     public static final DeferredItem<BlockItem> TESLA_LARGE_ITEM =
         ITEMS.registerSimpleBlockItem("tesla_coil_2x", TESLA_LARGE);

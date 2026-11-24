@@ -37,6 +37,9 @@ public class DockBlock extends BaseEntityBlock {
             .mapColor(MapColor.METAL)
             .strength(3.5f, 8.0f)
             .requiresCorrectToolForDrops()
+            // The model is not a full cube: without this the neighbours cull
+            // their faces against the dock and holes appear around it.
+            .noOcclusion()
             .sound(SoundType.METAL);
     }
 
