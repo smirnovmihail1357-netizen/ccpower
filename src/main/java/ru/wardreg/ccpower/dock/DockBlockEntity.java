@@ -112,6 +112,15 @@ public class DockBlockEntity extends BlockEntity {
         return peripheral;
     }
 
+    /** @return the turtle currently parked on top, or {@code null} when empty. */
+    public TurtleEnergyView getTurtleOnTop() {
+        if (getLevel() == null) return null;
+        BlockEntity above = getLevel().getBlockEntity(getBlockPos().above());
+        if (!(above instanceof TurtleBlockEntity turtleEntity)) return null;
+        ITurtleAccess access = turtleEntity.getAccess();
+        return access instanceof TurtleEnergyView view ? view : null;
+    }
+
     /** Server-side tick: pull RF from neighbours, charge the turtle above. */
     public static void serverTick(Level level, BlockPos pos, BlockState state, DockBlockEntity dock) {
         dock.lastPull = 0;

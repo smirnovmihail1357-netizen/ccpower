@@ -4,6 +4,11 @@ import dan200.computercraft.api.lua.GenericSource;
 import dan200.computercraft.api.lua.LuaFunction;
 import dan200.computercraft.api.lua.MethodResult;
 import dan200.computercraft.api.peripheral.IPeripheral;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import ru.wardreg.ccpower.power.ComputerPowerState;
+import ru.wardreg.ccpower.power.PowerManager;
+import ru.wardreg.ccpower.power.TurtleEnergyView;
 
 /**
  * CC:Tweaked peripheral for the Recharge Dock. Registered through the
@@ -72,5 +77,33 @@ public final class DockPeripheral implements IPeripheral, GenericSource {
     @LuaFunction("getChargeRate")
     public MethodResult getChargeRate(DockPeripheral peripheral) {
         return MethodResult.of(peripheral.dock == null ? 0L : peripheral.dock.getChargeRate());
+    }
+
+    /** Whether a turtle is currently standing on the dock. */
+    @LuaFunction("hasTurtle")
+    public MethodResult hasTurtle(DockPeripheral peripheral) {
+        return MethodResult.of(peripheral.dock != null && peripheral.dock.getTurtleOnTop() != null);
+    }
+
+    /**
+     * Information about the turtle parked on the dock, or {@code nil} when the
+     * dock is empty. The returned table has {@code id}, {@code energy},
+     * {@code capacity}, {@code chargeRate} and {@code dischargeRate} fields.
+     */
+    @LuaFunction("getTurtleInfo")
+    public MethodResult getTurtleInfo(DockPeripheral peripheral) {
+        if (peripheral.dock == null) return MethodResult.of();
+        TurtleEnergyView turtle = peripheral.dock.getTurtleOnTop();
+        if (turtle == null) return MethodResult.of();
+
+        int id = turtle.ccpower$computerId();
+        ComputerPowerState state = PowerManager.stateOrNull(id);
+        Map<String, Object> info = new LinkedHashMap<>();
+        info.put("id", id);
+        info.put("energy", turtle.ccpower$getEnergy());
+        info.put("capacity", turtle.ccpower$getCapacity());
+        info.put("chargeRate", state == null ? 0L : state.chargeRate());
+        info.put("dischargeRate", state == null ? 0L : state.dischargeRate());
+        return MethodResult.of(info);
     }
 }

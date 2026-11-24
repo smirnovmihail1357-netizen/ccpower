@@ -81,6 +81,8 @@ computer next to it, or attach it to a wired modem.
 | `getCapacity()` | number | Configured buffer capacity (`dock.bufferRF`). |
 | `getPullRate()` | number | RF/t the dock pulled from adjacent FE blocks on the last tick (`dock.pullRFPerTick` is the cap). |
 | `getChargeRate()` | number | RF/t the dock transferred into the turtle standing on it (`dock.chargeRFPerTick` is the cap). |
+| `hasTurtle()` | boolean | Whether a turtle is currently parked on the dock. |
+| `getTurtleInfo()` | table or `nil` | Info about the parked turtle: `id`, `energy`, `capacity`, `chargeRate`, `dischargeRate`. `nil` when the dock is empty. |
 
 ```lua
 local dock = peripheral.find("ccpower_dock")
@@ -90,6 +92,12 @@ local stored, cap = dock.getEnergy(), dock.getCapacity()
 local pulled, given = dock.getPullRate(), dock.getChargeRate()
 
 print(("Dock: %d/%d RF  +%d/t in  -%d/t out"):format(stored, cap, pulled, given))
+
+if dock.hasTurtle() then
+  local turtle = dock.getTurtleInfo()
+  print(("Turtle #%d: %d/%d RF, -%d/t"):format(
+    turtle.id, turtle.energy, turtle.capacity, turtle.dischargeRate))
+end
 ```
 
 ---
@@ -192,6 +200,8 @@ From `config/ccpower-common.toml` (hot-reloaded):
 | `getCapacity()` | число | Ёмкость буфера. |
 | `getPullRate()` | число | РФ/тик, подтянутые от соседей. |
 | `getChargeRate()` | число | РФ/тик, отданные черепахе. |
+| `hasTurtle()` | логическое | Есть ли черепаха на станции. |
+| `getTurtleInfo()` | таблица или `nil` | Данные черепахи: `id`, `energy`, `capacity`, `chargeRate`, `dischargeRate`; `nil`, если станция пуста. |
 
 ### 4. Карманные компьютеры и Smart Glasses
 
