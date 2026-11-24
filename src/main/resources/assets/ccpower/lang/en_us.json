@@ -1,5 +1,7 @@
 {
   "itemGroup.ccpower": "CC: Power",
   "block.ccpower.dock": "Recharge Dock",
-  "tooltip.ccpower.debug": "RF/t: +%s in / -%s out (%s / %s RF)"
+  "tooltip.ccpower.debug": "RF/t: +%s in / -%s out (%s / %s RF)",
+  "block.ccpower.tesla_coil_1x": "Tesla Coil (1x)",
+  "block.ccpower.tesla_coil_2x": "Tesla Coil (2x)"
 }

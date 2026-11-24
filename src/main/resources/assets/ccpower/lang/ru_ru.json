@@ -1,5 +1,7 @@
 {
   "itemGroup.ccpower": "CC: Энергия",
   "block.ccpower.dock": "Дроностанция",
-  "tooltip.ccpower.debug": "РФ/тик: +%s в / -%s из (%s / %s РФ)"
+  "tooltip.ccpower.debug": "РФ/тик: +%s в / -%s из (%s / %s РФ)",
+  "block.ccpower.tesla_coil_1x": "Катушка Теслы (1x)",
+  "block.ccpower.tesla_coil_2x": "Катушка Теслы (2x)"
 }

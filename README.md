@@ -67,6 +67,15 @@ with independent multipliers of `1.0` / `0.75`, or `FIXED` with an exact RF/t),
 its own buffer, and its own peripheral tick/call costs with a flag to reuse
 the computer's per-type prices. See [docs/API.md](docs/API.md).
 
+### Tesla Coils
+
+Two new blocks — `tesla_coil_1x` (radius 8) and `tesla_coil_2x` (two blocks
+tall, radius 16) — pulse every 12 seconds and recharge portable CC computers
+(pocket computers and Smart Glasses, if Advanced Peripherals is installed) in
+player inventories or as dropped items within range. Configurable through
+`tesla.smallRadius`, `tesla.largeRadius`, `tesla.energyPerTransfer` and
+`tesla.intervalSeconds`. See [docs/API.md](docs/API.md).
+
 ### Turtles
 
 - A turtle is a computer that moves, so it runs on the **same code path** as

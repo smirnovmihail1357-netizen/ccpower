@@ -128,7 +128,26 @@ tuned separately. In `FIXED` mode the number is the whole per-tick cost.
 
 ---
 
-## 5. Jade tooltip and the admin debug command
+## 5. Tesla Coils
+
+`ccpower:tesla_coil_1x` (radius 8) and `ccpower:tesla_coil_2x` (two blocks tall,
+radius 16) pulse every **12 seconds** by default. A pulse transfers RF to
+**portable CC computers that have our internal buffer** — pocket computers and
+Smart Glasses — found either in players' inventories (main slots, armour,
+off-hand) or as dropped items inside the coil's radius. Other items, including
+normal block computers and turtles, are ignored. Advanced Peripherals is
+optional; without it Smart Glasses simply do not exist.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `tesla.smallRadius` | `8` | Radius of the 1x coil, blocks |
+| `tesla.largeRadius` | `16` | Radius of the 2x coil, blocks |
+| `tesla.energyPerTransfer` | `500` | RF pushed into each eligible item per pulse |
+| `tesla.intervalSeconds` | `12` | Seconds between pulses |
+
+---
+
+## 6. Jade tooltip and the admin debug command
 
 With [Jade](https://modrinth.com/mod/jade) installed, pointing at a computer,
 turtle or Recharge Dock shows its RF store as the standard Jade energy bar with
@@ -148,7 +167,7 @@ targeted computer. Run it again to turn the line off.
 
 ---
 
-## 6. Configuration keys affecting these values
+## 7. Configuration keys affecting these values
 
 From `config/ccpower-common.toml` (hot-reloaded):
 
@@ -228,7 +247,23 @@ From `config/ccpower-common.toml` (hot-reloaded):
 
 Множители независимы, устройства настраиваются отдельно.
 
-### 5. Jade и команда `/ccpower debug`
+### 5. Катушки Теслы
+
+`ccpower:tesla_coil_1x` (радиус 8) и `ccpower:tesla_coil_2x` (высота 2 блока,
+радиус 16) раз в **12 секунд** (по умолчанию) посылают импульс. Импульс
+передаёт РФ только портативным компьютерам CC с нашим внутренним буфером —
+карманным компьютерам и Smart Glasses — в инвентарях игроков (основные слоты,
+броня, оффхенд) или в виде выпавших предметов в радиусе. Другие предметы
+игнорируются. Advanced Peripherals необязателен.
+
+| Ключ | Дефолт | Значение |
+|---|---|---|
+| `tesla.smallRadius` | `8` | Радиус маленькой катушки |
+| `tesla.largeRadius` | `16` | Радиус большой катушки |
+| `tesla.energyPerTransfer` | `500` | РФ за один импульс в каждый предмет |
+| `tesla.intervalSeconds` | `12` | Период импульсов, секунды |
+
+### 6. Jade и команда `/ccpower debug`
 
 При установленном Jade наведение на компьютер, черепаху или дроностанцию
 показывает стандартную шкалу энергии с числовой подписью. Полосу и числа

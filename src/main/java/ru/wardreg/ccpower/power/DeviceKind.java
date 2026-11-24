@@ -19,6 +19,8 @@ public enum DeviceKind {
 
     private static final String SMART_GLASSES_CLASS =
         "de.srendi.advancedperipherals.common.smartglasses.SmartGlassesComputer";
+    private static final String SMART_GLASSES_ITEM_CLASS =
+        "de.srendi.advancedperipherals.common.items.SmartGlassesItem";
 
     private static volatile Boolean advancedPeripheralsLoaded;
 
@@ -32,6 +34,21 @@ public enum DeviceKind {
             }
         }
         return STATIONARY;
+    }
+
+    /** Public for optional integrations that must not hard-link Advanced Peripherals. */
+    public static boolean advancedPeripheralsLoaded() {
+        return isAdvancedPeripheralsLoaded();
+    }
+
+    /** @return true when the stack is a Smart Glasses item (by class name). */
+    public static boolean isSmartGlassesItem(Object item) {
+        if (!isAdvancedPeripheralsLoaded() || item == null) return false;
+        for (Class<?> type = item.getClass(); type != null && type != Object.class;
+             type = type.getSuperclass()) {
+            if (SMART_GLASSES_ITEM_CLASS.equals(type.getName())) return true;
+        }
+        return false;
     }
 
     private static boolean isAdvancedPeripheralsLoaded() {

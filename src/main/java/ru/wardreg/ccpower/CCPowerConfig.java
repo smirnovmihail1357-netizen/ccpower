@@ -147,6 +147,23 @@ public final class CCPowerConfig {
             "(ccpower-peripherals.toml). false: use power.smartGlasses.peripheral* below.")
         .define("power.smartGlasses.useComputerPeripheralCosts", true);
 
+    // --- Tesla coils --------------------------------------------------------
+    private static final ModConfigSpec.IntValue TESLA_SMALL_RADIUS = BUILDER
+        .comment("Radius of the 1x Tesla Coil, in blocks.")
+        .defineInRange("tesla.smallRadius", 8, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue TESLA_LARGE_RADIUS = BUILDER
+        .comment("Radius of the 2x Tesla Coil, in blocks.")
+        .defineInRange("tesla.largeRadius", 16, 0, Integer.MAX_VALUE);
+
+    private static final ModConfigSpec.LongValue TESLA_ENERGY = BUILDER
+        .comment("RF transferred to each eligible item on one pulse.")
+        .defineInRange("tesla.energyPerTransfer", 500L, 0L, Long.MAX_VALUE);
+
+    private static final ModConfigSpec.IntValue TESLA_INTERVAL = BUILDER
+        .comment("Seconds between Tesla Coil pulses (default 12).")
+        .defineInRange("tesla.intervalSeconds", 12, 1, Integer.MAX_VALUE);
+
     private static final ModConfigSpec.BooleanValue LOGS = BUILDER
         .comment("Enable CC: Power log messages.")
         .define("logging.enabled", true);
@@ -231,6 +248,11 @@ public final class CCPowerConfig {
     public static double glassesPeripheralRFPerTick() { return GLASSES_PERIPHERAL_TICK.get(); }
     public static double glassesPeripheralCallRF() { return GLASSES_PERIPHERAL_CALL.get(); }
     public static boolean glassesUseComputerPeripherals() { return GLASSES_USE_COMPUTER_PERIPHERALS.get(); }
+
+    public static int teslaSmallRadius() { return TESLA_SMALL_RADIUS.get(); }
+    public static int teslaLargeRadius() { return TESLA_LARGE_RADIUS.get(); }
+    public static long teslaEnergyPerTransfer() { return TESLA_ENERGY.get(); }
+    public static int teslaIntervalSeconds() { return TESLA_INTERVAL.get(); }
 
     public static boolean loggingEnabled() {
         return LOGS.get();

@@ -165,6 +165,21 @@ public final class ComputerPowerState {
         return false;
     }
 
+    /** Push up to {@code amount} RF into the portable buffer; returns accepted RF. */
+    public long receivePortable(long amount) {
+        if (amount <= 0) return 0;
+        long current = portableBufferValue();
+        while (true) {
+            long accepted = Math.min(amount, Math.max(0, PortableCosts.capacity(kind) - current));
+            if (accepted <= 0) return 0;
+            if (portableBuffer.compareAndSet(current, current + accepted)) {
+                recordCharge(accepted);
+                return accepted;
+            }
+            current = portableBuffer.get();
+        }
+    }
+
     /** RF received during the last server tick (FE neighbours or the dock). */
     private final AtomicLong lastCharge = new AtomicLong();
 
