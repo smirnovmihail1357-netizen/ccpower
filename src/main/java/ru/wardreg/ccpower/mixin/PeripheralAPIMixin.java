@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.wardreg.ccpower.access.PeripheralOwnerAccess;
+import ru.wardreg.ccpower.power.APPeripheralManager;
 import ru.wardreg.ccpower.power.PeripheralCosts;
 import ru.wardreg.ccpower.power.PowerManager;
 
@@ -60,5 +61,6 @@ public abstract class PeripheralAPIMixin implements PeripheralOwnerAccess {
             PeripheralCosts.callCost(type);
         }
         PowerManager.onPeripheralChanged(ccpower$computerId(), side, type);
+        APPeripheralManager.onPeripheralChanged(ccpower$computerId(), side, peripheral);
     }
 }

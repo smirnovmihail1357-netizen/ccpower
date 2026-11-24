@@ -68,6 +68,8 @@ public final class CCPowerMod {
         NeoForge.EVENT_BUS.addListener((ServerStartedEvent event) ->
             PeripheralCosts.load(event.getServer().overworld()));
         NeoForge.EVENT_BUS.addListener((ServerTickEvent.Post event) -> PeripheralCosts.watchServerTick());
+        NeoForge.EVENT_BUS.addListener((ServerTickEvent.Post event) ->
+            ru.wardreg.ccpower.power.APPeripheralManager.tick());
 
         // Admin-only debug toggle for the optional Jade diagnostic line.
         NeoForge.EVENT_BUS.addListener(CCPowerCommands::register);

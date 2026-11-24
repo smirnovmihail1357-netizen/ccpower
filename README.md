@@ -76,6 +76,15 @@ player inventories or as dropped items within range. Configurable through
 `tesla.smallRadius`, `tesla.largeRadius`, `tesla.energyPerTransfer` and
 `tesla.intervalSeconds`. See [docs/API.md](docs/API.md).
 
+### Advanced Peripherals blocks
+
+With Advanced Peripherals installed, its peripheral blocks get an RF buffer
+refilled from adjacent FE blocks. While connected to at least one computer
+network they pay `power.advancedPeripheralsPeripheralRFPerTick` (default `2.0`)
+once per tick — extra connections and method calls are not billed. An empty
+buffer takes the block offline. Jade shows the buffer as a normal energy bar.
+See [docs/API.md](docs/API.md).
+
 ### Turtles
 
 - A turtle is a computer that moves, so it runs on the **same code path** as

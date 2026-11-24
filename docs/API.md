@@ -147,7 +147,30 @@ optional; without it Smart Glasses simply do not exist.
 
 ---
 
-## 6. Jade tooltip and the admin debug command
+## 6. Advanced Peripherals blocks
+
+When Advanced Peripherals is installed, every peripheral **block** from that
+mod (Player Detector, Chat Box, Energy Detector, Inventory Manager, ME/RS
+Bridge, Geo Scanner, etc.) gets its own internal RF buffer, refilled from
+adjacent FE blocks like a normal computer.
+
+- While the block is attached to **at least one computer network** it pays
+  `power.advancedPeripheralsPeripheralRFPerTick` (default `2.0`) once per tick.
+  Several attached computers do **not** multiply the cost.
+- Method calls are **not** billed separately here — all peripheral usage is
+  paid by the computer, as usual.
+- If the buffer cannot cover the cost, the block goes offline and its methods
+  fail with `Out of RF energy` until FE is available again.
+- Jade shows the buffer as the standard energy bar on these blocks.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `power.advancedPeripheralsPeripheralRFPerTick` | `2.0` | RF/t while connected (paid once) |
+| `power.advancedPeripheralsBufferRF` | `2000` | Buffer capacity |
+
+---
+
+## 7. Jade tooltip and the admin debug command
 
 With [Jade](https://modrinth.com/mod/jade) installed, pointing at a computer,
 turtle or Recharge Dock shows its RF store as the standard Jade energy bar with
@@ -167,7 +190,7 @@ targeted computer. Run it again to turn the line off.
 
 ---
 
-## 7. Configuration keys affecting these values
+## 8. Configuration keys affecting these values
 
 From `config/ccpower-common.toml` (hot-reloaded):
 
@@ -263,7 +286,28 @@ From `config/ccpower-common.toml` (hot-reloaded):
 | `tesla.energyPerTransfer` | `500` | РФ за один импульс в каждый предмет |
 | `tesla.intervalSeconds` | `12` | Период импульсов, секунды |
 
-### 6. Jade и команда `/ccpower debug`
+### 6. Блоки Advanced Peripherals
+
+Если Advanced Peripherals установлен, каждый его **периферийный блок** (Player
+Detector, Chat Box, Energy Detector, Inventory Manager, ME/RS Bridge,
+Geo Scanner и др.) получает свой внутренний РФ-буфер, который пополняется от
+соседних FE-блоков как у обычного ПК.
+
+- Пока блок подключён **хотя бы к одной сети компьютера**, он платит
+  `power.advancedPeripheralsPeripheralRFPerTick` (дефолт `2.0`) **один раз**
+  за тик. Несколько подключённых ПК не увеличивают плату.
+- За вызовы периферии с блока ничего не списывается — всё это оплачивается
+  в компьютере.
+- Если буфер пуст, блок уходит офлайн и его методы возвращают
+  `Out of RF energy`, пока не появится энергия.
+- Jade показывает буфер стандартной полосой.
+
+| Ключ | Дефолт | Значение |
+|---|---|---|
+| `power.advancedPeripheralsPeripheralRFPerTick` | `2.0` | РФ/тик за подключение (один раз) |
+| `power.advancedPeripheralsBufferRF` | `2000` | Ёмкость буфера |
+
+### 7. Jade и команда `/ccpower debug`
 
 При установленном Jade наведение на компьютер, черепаху или дроностанцию
 показывает стандартную шкалу энергии с числовой подписью. Полосу и числа

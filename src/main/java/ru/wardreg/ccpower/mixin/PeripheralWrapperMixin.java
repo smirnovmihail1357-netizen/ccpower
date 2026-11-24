@@ -3,7 +3,9 @@ package ru.wardreg.ccpower.mixin;
 import dan200.computercraft.api.lua.ILuaContext;
 import dan200.computercraft.api.lua.IArguments;
 import dan200.computercraft.api.lua.MethodResult;
+import dan200.computercraft.api.peripheral.IPeripheral;
 import dan200.computercraft.core.apis.PeripheralAPI;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -11,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import ru.wardreg.ccpower.access.PeripheralOwnerAccess;
+import ru.wardreg.ccpower.power.APPeripheralManager;
 import ru.wardreg.ccpower.power.PowerManager;
 
 /**
@@ -34,9 +37,20 @@ public abstract class PeripheralWrapperMixin {
     @Final
     private String type;
 
+    @Shadow
+    @Final
+    private IPeripheral peripheral;
+
     @Inject(method = "call", at = @At("HEAD"), remap = false)
     private void ccpower$chargeCall(ILuaContext context, String method, IArguments arguments,
         CallbackInfoReturnable<MethodResult> cir) {
+        // An Advanced Peripherals block without RF is offline: its calls fail.
+        // No extra energy is charged here - all billing lives in the computer.
+        if (peripheral.getTarget() instanceof BlockEntity blockEntity
+            && APPeripheralManager.isOffline(blockEntity)) {
+            cir.setReturnValue(MethodResult.of(Boolean.FALSE, "Out of RF energy"));
+            return;
+        }
         PowerManager.chargePeripheralCall(
             ((PeripheralOwnerAccess) (Object) this$0).ccpower$computerId(), type);
     }

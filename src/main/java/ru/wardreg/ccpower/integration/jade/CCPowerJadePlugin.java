@@ -6,11 +6,14 @@ import dan200.computercraft.shared.turtle.blocks.TurtleBlock;
 import java.util.List;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.resources.ResourceLocation;
 import ru.wardreg.ccpower.CCPowerConfig;
 import ru.wardreg.ccpower.debug.DebugState;
 import ru.wardreg.ccpower.dock.DockBlock;
 import ru.wardreg.ccpower.dock.DockBlockEntity;
+import ru.wardreg.ccpower.power.APPeripheralManager;
+import ru.wardreg.ccpower.power.APPeripheralState;
 import ru.wardreg.ccpower.power.ComputerPowerState;
 import ru.wardreg.ccpower.power.PowerManager;
 import snownee.jade.api.Accessor;
@@ -140,6 +143,11 @@ public class CCPowerJadePlugin implements IWailaPlugin {
                 } else if (block.getBlockEntity() instanceof DockBlockEntity dock) {
                     current = dock.getBuffer();
                     max = dock.getBufferCapacity();
+                } else if (block.getBlockEntity() instanceof BlockEntity blockEntity) {
+                    APPeripheralState state = APPeripheralManager.stateAt(blockEntity);
+                    if (state == null) return null;
+                    current = state.stored();
+                    max = CCPowerConfig.advancedPeripheralsBufferRF();
                 } else {
                     return null;
                 }
@@ -168,6 +176,9 @@ public class CCPowerJadePlugin implements IWailaPlugin {
         registration.registerBlockDataProvider(server, AbstractComputerBlockEntity.class);
         registration.registerEnergyStorage(EnergyProvider.INSTANCE, AbstractComputerBlockEntity.class);
         registration.registerEnergyStorage(EnergyProvider.INSTANCE, DockBlockEntity.class);
+        // Advanced Peripherals is optional: recognised by registry namespace,
+        // so the generic BlockEntity registration is enough for its blocks.
+        registration.registerEnergyStorage(EnergyProvider.INSTANCE, BlockEntity.class);
     }
 
     @Override

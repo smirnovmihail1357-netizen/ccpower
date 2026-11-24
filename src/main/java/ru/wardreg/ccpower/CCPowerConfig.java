@@ -147,6 +147,17 @@ public final class CCPowerConfig {
             "(ccpower-peripherals.toml). false: use power.smartGlasses.peripheral* below.")
         .define("power.smartGlasses.useComputerPeripheralCosts", true);
 
+    // --- Advanced Peripherals peripheral blocks -----------------------------
+    private static final ModConfigSpec.DoubleValue AP_PERIPHERAL_TICK = BUILDER
+        .comment("RF per tick paid by an Advanced Peripherals peripheral block while",
+            "it is connected to at least one computer. Paid once per block, no matter",
+            "how many computers are attached. No extra charge for method calls.")
+        .defineInRange("power.advancedPeripheralsPeripheralRFPerTick", 2.0, 0.0, Double.MAX_VALUE);
+
+    private static final ModConfigSpec.LongValue AP_BUFFER = BUILDER
+        .comment("Internal RF buffer of an Advanced Peripherals peripheral block.")
+        .defineInRange("power.advancedPeripheralsBufferRF", 2_000L, 0L, Long.MAX_VALUE);
+
     // --- Tesla coils --------------------------------------------------------
     private static final ModConfigSpec.IntValue TESLA_SMALL_RADIUS = BUILDER
         .comment("Radius of the 1x Tesla Coil, in blocks.")
@@ -248,6 +259,9 @@ public final class CCPowerConfig {
     public static double glassesPeripheralRFPerTick() { return GLASSES_PERIPHERAL_TICK.get(); }
     public static double glassesPeripheralCallRF() { return GLASSES_PERIPHERAL_CALL.get(); }
     public static boolean glassesUseComputerPeripherals() { return GLASSES_USE_COMPUTER_PERIPHERALS.get(); }
+
+    public static double advancedPeripheralsPeripheralRFPerTick() { return AP_PERIPHERAL_TICK.get(); }
+    public static long advancedPeripheralsBufferRF() { return AP_BUFFER.get(); }
 
     public static int teslaSmallRadius() { return TESLA_SMALL_RADIUS.get(); }
     public static int teslaLargeRadius() { return TESLA_LARGE_RADIUS.get(); }
