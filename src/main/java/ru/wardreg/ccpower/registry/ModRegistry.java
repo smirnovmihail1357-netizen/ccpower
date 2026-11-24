@@ -97,6 +97,10 @@ public final class ModRegistry {
         // Expose the dock's internal state to adjacent computers as a CC:T peripheral.
         event.registerBlockEntity(PeripheralCapability.get(), DOCK_BE.get(),
             (dock, side) -> dock.getPeripheral());
+        event.registerBlockEntity(PeripheralCapability.get(), TESLA_BE_SMALL.get(),
+            (coil, side) -> coil.getPeripheral());
+        event.registerBlockEntity(PeripheralCapability.get(), TESLA_BE_TALL.get(),
+            (coil, side) -> coil.getPeripheral());
     }
 
     private ModRegistry() {}

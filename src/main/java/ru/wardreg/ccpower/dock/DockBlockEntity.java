@@ -107,6 +107,21 @@ public class DockBlockEntity extends BlockEntity {
         return lastCharge;
     }
 
+    /** Deposit RF into the dock buffer through a CC peripheral. */
+    public long receiveRF(long amount) {
+        return storage.receiveEnergy((int) Math.min(amount, Integer.MAX_VALUE), false);
+    }
+
+    /** Withdraw RF from the dock buffer through a CC peripheral. */
+    public long extractRF(long amount) {
+        long taken = Math.max(0, Math.min(amount, buffer));
+        if (taken > 0) {
+            buffer -= taken;
+            setChanged();
+        }
+        return taken;
+    }
+
     /** @return the CC:T peripheral exposing this dock's internal state. */
     public DockPeripheral getPeripheral() {
         return peripheral;

@@ -17,6 +17,8 @@ import ru.wardreg.ccpower.dock.DockPeripheral;
 import ru.wardreg.ccpower.lua.ComputerStatePeripheral;
 import ru.wardreg.ccpower.lua.PowerAPI;
 import ru.wardreg.ccpower.power.PeripheralCosts;
+import ru.wardreg.ccpower.power.UniversalEnergyPeripheral;
+import ru.wardreg.ccpower.tesla.TeslaPeripheral;
 import ru.wardreg.ccpower.registry.ModRegistry;
 
 /**
@@ -54,6 +56,8 @@ public final class CCPowerMod {
         ComputerCraftAPI.registerGenericSource(new DockPeripheral());
         // Adds the same state methods to every computer/turtle peripheral.
         ComputerCraftAPI.registerGenericSource(new ComputerStatePeripheral());
+        ComputerCraftAPI.registerGenericSource(new TeslaPeripheral());
+        ComputerCraftAPI.registerGenericSource(new UniversalEnergyPeripheral());
 
         // Common config: watched by NeoForge and reloaded dynamically on file change.
         container.registerConfig(ModConfig.Type.COMMON, CCPowerConfig.SPEC);

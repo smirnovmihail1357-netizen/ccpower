@@ -175,6 +175,10 @@ public final class CCPowerConfig {
         .comment("Seconds between Tesla Coil pulses (default 12).")
         .defineInRange("tesla.intervalSeconds", 12, 1, Integer.MAX_VALUE);
 
+    private static final ModConfigSpec.LongValue TESLA_BUFFER = BUILDER
+        .comment("Internal RF buffer of a Tesla Coil, refilled from adjacent FE blocks.")
+        .defineInRange("tesla.bufferRF", 50_000L, 0L, Long.MAX_VALUE);
+
     private static final ModConfigSpec.BooleanValue LOGS = BUILDER
         .comment("Enable CC: Power log messages.")
         .define("logging.enabled", true);
@@ -267,6 +271,7 @@ public final class CCPowerConfig {
     public static int teslaLargeRadius() { return TESLA_LARGE_RADIUS.get(); }
     public static long teslaEnergyPerTransfer() { return TESLA_ENERGY.get(); }
     public static int teslaIntervalSeconds() { return TESLA_INTERVAL.get(); }
+    public static long teslaBufferRF() { return TESLA_BUFFER.get(); }
 
     public static boolean loggingEnabled() {
         return LOGS.get();

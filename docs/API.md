@@ -144,6 +144,25 @@ optional; without it Smart Glasses simply do not exist.
 | `tesla.largeRadius` | `16` | Radius of the 2x coil, blocks |
 | `tesla.energyPerTransfer` | `500` | RF pushed into each eligible item per pulse |
 | `tesla.intervalSeconds` | `12` | Seconds between pulses |
+| `tesla.bufferRF` | `50000` | Coil buffer capacity, refilled from adjacent FE |
+
+The coil is also a peripheral of type `ccpower_tesla_coil`:
+
+| Method | Returns | Description |
+|---|---|---|
+| `getEnergy()` / `getCapacity()` | number | Internal buffer / its capacity |
+| `getEnergyGiven()` | number | Total RF delivered since the coil was built |
+| `getPulseCount()` | number | Number of pulses that actually delivered RF |
+| `getLastPulseEnergy()` | number | RF delivered by the last pulse |
+| `getDeliveryRate()` | number | Average RF/second over the coil's lifetime |
+| `receiveEnergy(amount)` | number | Deposit RF into the buffer, returns accepted |
+| `extractEnergy(amount)` | number | Withdraw RF from the buffer, returns taken |
+
+```lua
+local coil = peripheral.find("ccpower_tesla_coil")
+print(coil.getEnergy() .. "/" .. coil.getCapacity() .. " RF")
+print("given: " .. coil.getEnergyGiven() .. " RF in " .. coil.getPulseCount() .. " pulses")
+```
 
 ---
 
@@ -170,7 +189,34 @@ adjacent FE blocks like a normal computer.
 
 ---
 
-## 7. Jade tooltip and the admin debug command
+## 7. Depositing and withdrawing RF through any peripheral
+
+Every CC:Tweaked peripheral whose target is one of our energy-holding blocks
+— the Recharge Dock, a Tesla Coil, a computer/turtle block, or an Advanced
+Peripherals block with our buffer — accepts these methods through the
+**standard peripheral API**, regardless of which mod created the peripheral:
+
+| Method | Returns |
+|---|---|
+| `getEnergy()` | RF stored in the block |
+| `getCapacity()` | Buffer capacity |
+| `receiveEnergy(amount)` | RF actually deposited |
+| `extractEnergy(amount)` | RF actually withdrawn |
+
+```lua
+local p = peripheral.wrap("back")
+if p.getEnergy then
+  p.receiveEnergy(500)
+  print("stored:", p.getEnergy(), "/", p.getCapacity())
+  local taken = p.extractEnergy(100)
+end
+```
+
+No extra energy is charged for these calls themselves.
+
+---
+
+## 8. Jade tooltip and the admin debug command
 
 With [Jade](https://modrinth.com/mod/jade) installed, pointing at a computer,
 turtle or Recharge Dock shows its RF store as the standard Jade energy bar with
@@ -190,7 +236,7 @@ targeted computer. Run it again to turn the line off.
 
 ---
 
-## 8. Configuration keys affecting these values
+## 9. Configuration keys affecting these values
 
 From `config/ccpower-common.toml` (hot-reloaded):
 
@@ -285,6 +331,12 @@ From `config/ccpower-common.toml` (hot-reloaded):
 | `tesla.largeRadius` | `16` | Радиус большой катушки |
 | `tesla.energyPerTransfer` | `500` | РФ за один импульс в каждый предмет |
 | `tesla.intervalSeconds` | `12` | Период импульсов, секунды |
+| `tesla.bufferRF` | `50000` | Ёмкость буфера катушки |
+
+Катушка — периферия типа `ccpower_tesla_coil`: `getEnergy()`, `getCapacity()`
+(буфер), `getEnergyGiven()` (всего отдано), `getPulseCount()` (число импульсов),
+`getLastPulseEnergy()` ( RF в последнем импульсе), `getDeliveryRate()` (среднее
+РФ/сек), `receiveEnergy(amount)` и `extractEnergy(amount)`.
 
 ### 6. Блоки Advanced Peripherals
 
@@ -307,7 +359,15 @@ Geo Scanner и др.) получает свой внутренний РФ-буф
 | `power.advancedPeripheralsPeripheralRFPerTick` | `2.0` | РФ/тик за подключение (один раз) |
 | `power.advancedPeripheralsBufferRF` | `2000` | Ёмкость буфера |
 
-### 7. Jade и команда `/ccpower debug`
+### 7. Закачка и откачка РФ через любую периферию
+
+Любая периферия ComputerCraft, чья цель — блок с нашим буфером (дроностанция,
+катушка Теслы, компьютер/черепаха или блок Advanced Peripherals), поддерживает
+через стандартный peripheral API методы `getEnergy()`, `getCapacity()`,
+`receiveEnergy(amount)` и `extractEnergy(amount)`. Дополнительная энергия за
+сами вызовы не списывается.
+
+### 8. Jade и команда `/ccpower debug`
 
 При установленном Jade наведение на компьютер, черепаху или дроностанцию
 показывает стандартную шкалу энергии с числовой подписью. Полосу и числа
