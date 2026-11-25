@@ -16,6 +16,7 @@ import ru.wardreg.ccpower.power.APPeripheralManager;
 import ru.wardreg.ccpower.power.APPeripheralState;
 import ru.wardreg.ccpower.power.ComputerPowerState;
 import ru.wardreg.ccpower.power.PowerManager;
+import ru.wardreg.ccpower.tesla.TeslaCoilBlockEntity;
 import snownee.jade.api.Accessor;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IComponentProvider;
@@ -38,10 +39,11 @@ import snownee.jade.api.view.ViewGroup;
  * never references Jade directly.
  *
  * <p>The RF state lives on the server only. An energy extension provider
- * registered for both computer block entities and the Recharge Dock feeds
- * Jade's universal energy component, which renders the progress bar with its
- * standard numeric "current / capacity FE" label. The only custom text line
- * is the optional diagnostic shown after {@code /ccpower debug}.
+ * registered for computer block entities, the Recharge Dock and both Tesla
+ * Coils feeds Jade's universal energy component, which renders the progress
+ * bar with its standard numeric "current / capacity FE" label. Coils use the
+ * exact same provider as the dock, so their bar looks identical. The only
+ * custom text line is the optional diagnostic shown after {@code /ccpower debug}.
  */
 @WailaPlugin
 public class CCPowerJadePlugin implements IWailaPlugin {
@@ -108,9 +110,9 @@ public class CCPowerJadePlugin implements IWailaPlugin {
 
     /**
      * Feeds the internal RF store of computers (and the battery of turtles)
-     * into Jade's generic energy bar. The Recharge Dock is included so both
-     * blocks are described through the same extension provider and therefore
-     * get the identical Jade bar with the same numeric label.
+     * into Jade's generic energy bar. The Recharge Dock and both Tesla Coils
+     * use the same extension provider and therefore get the identical Jade
+     * bar with the same numeric label.
      */
     private enum EnergyProvider
         implements IServerExtensionProvider<CompoundTag>,
@@ -143,6 +145,9 @@ public class CCPowerJadePlugin implements IWailaPlugin {
                 } else if (block.getBlockEntity() instanceof DockBlockEntity dock) {
                     current = dock.getBuffer();
                     max = dock.getBufferCapacity();
+                } else if (block.getBlockEntity() instanceof TeslaCoilBlockEntity coil) {
+                    current = coil.stored();
+                    max = coil.capacity();
                 } else if (block.getBlockEntity() instanceof BlockEntity blockEntity) {
                     APPeripheralState state = APPeripheralManager.stateAt(blockEntity);
                     if (state == null) return null;
@@ -176,6 +181,7 @@ public class CCPowerJadePlugin implements IWailaPlugin {
         registration.registerBlockDataProvider(server, AbstractComputerBlockEntity.class);
         registration.registerEnergyStorage(EnergyProvider.INSTANCE, AbstractComputerBlockEntity.class);
         registration.registerEnergyStorage(EnergyProvider.INSTANCE, DockBlockEntity.class);
+        registration.registerEnergyStorage(EnergyProvider.INSTANCE, TeslaCoilBlockEntity.class);
         // Advanced Peripherals is optional: recognised by registry namespace,
         // so the generic BlockEntity registration is enough for its blocks.
         registration.registerEnergyStorage(EnergyProvider.INSTANCE, BlockEntity.class);

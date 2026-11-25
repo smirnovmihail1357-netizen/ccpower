@@ -130,8 +130,10 @@ tuned separately. In `FIXED` mode the number is the whole per-tick cost.
 
 ## 5. Tesla Coils
 
-`ccpower:tesla_coil_1x` (radius 8) and `ccpower:tesla_coil_2x` (two blocks tall,
-radius 16) pulse every **12 seconds** by default. A pulse transfers RF to
+The small coil (`ccpower:tesla_coil_1x`, radius 8) and the large coil
+(`ccpower:tesla_coil_2x`, two blocks tall, radius 16) pulse every
+**12 seconds** by default. Hovering either one with Jade shows its RF buffer
+as the same energy bar used by computers and the Recharge Dock. A pulse transfers RF to
 **portable CC computers that have our internal buffer** — pocket computers and
 Smart Glasses — found either in players' inventories (main slots, armour,
 off-hand) or as dropped items inside the coil's radius. Other items, including
@@ -140,8 +142,8 @@ optional; without it Smart Glasses simply do not exist.
 
 | Key | Default | Meaning |
 |---|---|---|
-| `tesla.smallRadius` | `8` | Radius of the 1x coil, blocks |
-| `tesla.largeRadius` | `16` | Radius of the 2x coil, blocks |
+| `tesla.smallRadius` | `8` | Radius of the small coil, blocks |
+| `tesla.largeRadius` | `16` | Radius of the large coil, blocks |
 | `tesla.energyPerTransfer` | `500` | RF pushed into each eligible item per pulse |
 | `tesla.intervalSeconds` | `12` | Seconds between pulses |
 | `tesla.bufferRF` | `50000` | Coil buffer capacity, refilled from adjacent FE |
@@ -318,8 +320,10 @@ From `config/ccpower-common.toml` (hot-reloaded):
 
 ### 5. Катушки Теслы
 
-`ccpower:tesla_coil_1x` (радиус 8) и `ccpower:tesla_coil_2x` (высота 2 блока,
-радиус 16) раз в **12 секунд** (по умолчанию) посылают импульс. Импульс
+Катушка ТС маленькая (`ccpower:tesla_coil_1x`, радиус 8) и катушка ТС
+большая (`ccpower:tesla_coil_2x`, высота 2 блока, радиус 16) раз в
+**12 секунд** (по умолчанию) посылают импульс. При наведении Jade показывает
+РФ-буфер любой из них той же шкалой, что и у компьютеров и дроностанции. Импульс
 передаёт РФ только портативным компьютерам CC с нашим внутренним буфером —
 карманным компьютерам и Smart Glasses — в инвентарях игроков (основные слоты,
 броня, оффхенд) или в виде выпавших предметов в радиусе. Другие предметы

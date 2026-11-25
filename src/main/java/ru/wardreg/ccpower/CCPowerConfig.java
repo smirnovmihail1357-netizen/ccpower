@@ -160,11 +160,11 @@ public final class CCPowerConfig {
 
     // --- Tesla coils --------------------------------------------------------
     private static final ModConfigSpec.IntValue TESLA_SMALL_RADIUS = BUILDER
-        .comment("Radius of the 1x Tesla Coil, in blocks.")
+        .comment("Radius of the small Tesla Coil, in blocks.")
         .defineInRange("tesla.smallRadius", 8, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.IntValue TESLA_LARGE_RADIUS = BUILDER
-        .comment("Radius of the 2x Tesla Coil, in blocks.")
+        .comment("Radius of the large Tesla Coil, in blocks.")
         .defineInRange("tesla.largeRadius", 16, 0, Integer.MAX_VALUE);
 
     private static final ModConfigSpec.LongValue TESLA_ENERGY = BUILDER
