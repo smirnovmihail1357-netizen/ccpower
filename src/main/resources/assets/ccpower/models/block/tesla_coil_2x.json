@@ -1,6 +1,7 @@
 {
   "textures": {
-    "0": "ccpower:block/tesla_coil_2x_texture"
+    "0": "ccpower:block/tesla_coil_2x_texture",
+    "particle": "ccpower:particle/tesla_coil_large"
   },
   "elements": [
     {

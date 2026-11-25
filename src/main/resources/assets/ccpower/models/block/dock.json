@@ -1,6 +1,7 @@
 {
   "textures": {
-    "0": "ccpower:block/dock_texture"
+    "0": "ccpower:block/dock_texture",
+    "particle": "ccpower:particle/dock"
   },
   "elements": [
     {

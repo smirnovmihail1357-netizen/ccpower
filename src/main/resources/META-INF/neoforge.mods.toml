@@ -6,7 +6,7 @@ license = "MIT"
 
 [[mods]]
 modId = "ccpower"
-version = "0.14.0"
+version = "0.14.1"
 displayName = "CC: Power"
 authors = "wardreg"
 description = '''
