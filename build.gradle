@@ -3,7 +3,7 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.144'
 }
 
-version = '0.13.6'
+version = '0.13.7'
 group = 'ru.wardreg.ccpower'
 
 java {
