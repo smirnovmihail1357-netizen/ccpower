@@ -126,6 +126,7 @@ public final class PowerManager {
         else if (portable) paid = st.consumePortable(need);
         else paid = st.consumeBuffer(need);
         if (paid) st.recordDischarge(need);
+        if (portable) st.syncPortableToStack();
 
         if (!paid) {
             // Fully discharged: shut the computer down. The running program is

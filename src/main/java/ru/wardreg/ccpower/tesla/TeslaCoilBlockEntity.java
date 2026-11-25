@@ -157,8 +157,12 @@ public class TeslaCoilBlockEntity extends BlockEntity {
             dan200.computercraft.shared.ModRegistry.DataComponents.COMPUTER_ID.get());
         if (idValue == null) return 0;
         ComputerPowerState state = PowerManager.state(idValue.id());
-        if (!state.kind().isPortable()) state.setKind(kind);
-        return state.receivePortable(budget);
+        Long stored = stack.get(ModRegistry.POCKET_RF.get());
+        state.hydratePortable(stored == null ? Long.MAX_VALUE : stored, kind);
+        state.bindPocketStack(stack);
+        long accepted = state.receivePortable(budget);
+        if (accepted > 0) state.syncPortableToStack();
+        return accepted;
     }
 
     @Override

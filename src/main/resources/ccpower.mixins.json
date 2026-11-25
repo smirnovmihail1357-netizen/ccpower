@@ -6,6 +6,7 @@
     "ComputerExecutorMixin",
     "PeripheralAPIMixin",
     "PeripheralWrapperMixin",
+    "PocketComputerItemMixin",
     "ServerComputerMixin",
     "TurtleBrainMixin"
   ],

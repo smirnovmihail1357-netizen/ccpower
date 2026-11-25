@@ -1,9 +1,12 @@
 package ru.wardreg.ccpower.registry;
 
+import com.mojang.serialization.Codec;
 import dan200.computercraft.api.peripheral.PeripheralCapability;
 import java.util.function.Supplier;
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
@@ -34,6 +37,19 @@ public final class ModRegistry {
         DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, CCPowerMod.MODID);
     public static final DeferredRegister<CreativeModeTab> TABS =
         DeferredRegister.create(Registries.CREATIVE_MODE_TAB, CCPowerMod.MODID);
+    public static final DeferredRegister<DataComponentType<?>> DATA_COMPONENTS =
+        DeferredRegister.create(Registries.DATA_COMPONENT_TYPE, CCPowerMod.MODID);
+
+    /**
+     * RF carried inside a pocket computer's ItemStack. Kept as a real item
+     * component so the value survives reloads and is visible to the client
+     * (which draws it as a durability-style bar).
+     */
+    public static final Supplier<DataComponentType<Long>> POCKET_RF =
+        DATA_COMPONENTS.register("pocket_rf", () -> DataComponentType.<Long>builder()
+            .persistent(Codec.LONG)
+            .networkSynchronized(ByteBufCodecs.VAR_LONG)
+            .build());
 
     public static final DeferredBlock<DockBlock> DOCK = BLOCKS.register("dock",
         () -> new DockBlock(DockBlock.blockProperties()));
@@ -88,6 +104,7 @@ public final class ModRegistry {
         ITEMS.register(modBus);
         BLOCK_ENTITIES.register(modBus);
         TABS.register(modBus);
+        DATA_COMPONENTS.register(modBus);
     }
 
     /**

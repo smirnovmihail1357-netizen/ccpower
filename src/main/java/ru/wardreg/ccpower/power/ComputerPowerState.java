@@ -6,8 +6,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
 import ru.wardreg.ccpower.CCPowerConfig;
+import ru.wardreg.ccpower.registry.ModRegistry;
 
 /**
  * Per-computer power accounting state. One instance exists for every CC:Tweaked
@@ -136,6 +139,9 @@ public final class ComputerPowerState {
      */
     private final AtomicLong portableBuffer = new AtomicLong(-1);
 
+    /** Server-side stack that currently carries this portable computer. */
+    private final AtomicReference<ItemStack> pocketStack = new AtomicReference<>();
+
     /** Lazily fill the portable buffer from config the first time it is used. */
     private long portableBufferValue() {
         long value = portableBuffer.get();
@@ -163,6 +169,33 @@ public final class ComputerPowerState {
             current = portableBuffer.get();
         }
         return false;
+    }
+
+    /**
+     * Restore the portable buffer from the ItemStack on first sight. A stack
+     * that has never been charged starts at full capacity, as before.
+     */
+    public void hydratePortable(long stored, DeviceKind kind) {
+        if (!this.kind.isPortable()) setKind(kind);
+        if (portableBuffer.get() < 0) {
+            long value = Math.max(0, Math.min(stored, PortableCosts.capacity(this.kind)));
+            portableBuffer.compareAndSet(-1, value);
+        }
+    }
+
+    /** Remember which ItemStack currently holds this portable computer. */
+    public void bindPocketStack(ItemStack stack) {
+        pocketStack.set(stack);
+    }
+
+    /** Write the current portable RF back into the bound stack, if changed. */
+    public void syncPortableToStack() {
+        ItemStack stack = pocketStack.get();
+        if (stack == null || stack.isEmpty()) return;
+        DataComponentType<Long> type = ModRegistry.POCKET_RF.get();
+        Long old = stack.get(type);
+        long value = portableStored();
+        if (old == null || old.longValue() != value) stack.set(type, value);
     }
 
     /** Push up to {@code amount} RF into the portable buffer; returns accepted RF. */

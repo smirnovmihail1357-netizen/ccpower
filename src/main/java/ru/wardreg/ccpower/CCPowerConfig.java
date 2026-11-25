@@ -101,7 +101,8 @@ public final class CCPowerConfig {
         .defineInRange("power.pocket.fixedRFPerTick", 2.0, 0.0, Double.MAX_VALUE);
 
     private static final ModConfigSpec.LongValue POCKET_BUFFER = BUILDER
-        .comment("Internal RF buffer of a pocket computer. It starts full and is not refilled.")
+        .comment("Internal RF buffer of a pocket computer. Stored in the item itself,",
+            "shown as a durability bar and refilled by Tesla Coils.")
         .defineInRange("power.pocket.bufferRF", 2_000L, 0L, Long.MAX_VALUE);
 
     private static final ModConfigSpec.DoubleValue POCKET_PERIPHERAL_TICK = BUILDER

@@ -148,6 +148,10 @@ optional; without it Smart Glasses simply do not exist.
 | `tesla.intervalSeconds` | `12` | Seconds between pulses |
 | `tesla.bufferRF` | `50000` | Coil buffer capacity, refilled from adjacent FE |
 
+Pocket computers carry their RF **in the item's `ccpower:pocket_rf` data component**.
+It survives reloads, is refilled by Tesla Coils and is drawn as a durability-style
+bar on the item (green / yellow / red by remaining charge).
+
 The coil is also a peripheral of type `ccpower_tesla_coil`:
 
 | Method | Returns | Description |
